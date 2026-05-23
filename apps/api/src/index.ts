@@ -11,8 +11,14 @@ import practiceRoute from "./routes/practice.route"
 const app = new Hono()
 
 app.use("*", logger())
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "https://studyhere.pages.edgeone.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+]
+
 app.use("*", cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: (origin) => (allowedOrigins.includes(origin) ? origin : allowedOrigins[0]),
   credentials: true,
 }))
 
