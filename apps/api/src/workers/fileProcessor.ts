@@ -5,11 +5,10 @@ import { prisma } from "../lib/prisma"
 import { supabaseAdmin, STORAGE_BUCKET } from "../lib/supabase"
 
 // =====================================================
-// C 的 AI 服务对接点（联调时由 C 实现这些函数，
-// 在 apps/api/src/services/ 下放入对应 .ts，然后取消下面的注释）
+// C 的 AI 服务对接点（已接入真实实现）
 // =====================================================
-// import { parseFile } from "../services/parser.service"
-// import { generatePlan, generateFlashcards, generateQuestions } from "../services/plan.service"
+import { parseFile } from "../services/parser.service"
+import { generatePlan, generateFlashcards, generateQuestions } from "../services/plan.service"
 // =====================================================
 
 const DEFAULT_PLAN_DAYS = 14
@@ -67,9 +66,8 @@ export async function processVault(vaultId: string): Promise<void> {
     await writeFile(tmpFilePath, buffer)
     console.log(`[Worker] 文件已下载到: ${tmpFilePath} (${buffer.length} bytes)`)
 
-    // 4. 提取文字内容（C 联调时接入）
-    // const textContent = await parseFile(tmpFilePath, blob.type)
-    const textContent = await mockParseFile(tmpFilePath, vault.filename)
+    // 4. 提取文字内容（C 真实实现）
+    const textContent = await parseFile(tmpFilePath, blob.type)
     console.log(`[Worker] 解析完成，文字长度: ${textContent.length}`)
 
     await prisma.vault.update({
@@ -77,9 +75,8 @@ export async function processVault(vaultId: string): Promise<void> {
       data: { textContent },
     })
 
-    // 5. 生成学习计划（C 联调时接入）
-    // const plan = await generatePlan(textContent, DEFAULT_PLAN_DAYS)
-    const plan = mockGeneratePlan(textContent, DEFAULT_PLAN_DAYS, vault.filename)
+    // 5. 生成学习计划（C 真实实现）
+    const plan = await generatePlan(textContent, DEFAULT_PLAN_DAYS)
 
     const studyPlan = await prisma.studyPlan.create({
       data: {
@@ -96,8 +93,7 @@ export async function processVault(vaultId: string): Promise<void> {
     for (const day of plan.days) {
       const dayContent = `${day.topics.join("、")}：${day.goals.join("；")}`
 
-      // const flashcards = await generateFlashcards(dayContent, FLASHCARDS_PER_DAY)
-      const flashcards = mockGenerateFlashcards(dayContent, FLASHCARDS_PER_DAY)
+      const flashcards = await generateFlashcards(dayContent, FLASHCARDS_PER_DAY)
       if (flashcards.length > 0) {
         await prisma.flashcard.createMany({
           data: flashcards.map((f) => ({
@@ -109,8 +105,7 @@ export async function processVault(vaultId: string): Promise<void> {
         })
       }
 
-      // const questions = await generateQuestions(dayContent, QUESTIONS_PER_DAY)
-      const questions = mockGenerateQuestions(dayContent, QUESTIONS_PER_DAY)
+      const questions = await generateQuestions(dayContent, QUESTIONS_PER_DAY)
       if (questions.length > 0) {
         await prisma.question.createMany({
           data: questions.map((q) => ({
