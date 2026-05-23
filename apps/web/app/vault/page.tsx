@@ -2,14 +2,56 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import {
+  Upload,
+  FileText,
+  FileType2,
+  Loader2,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  LogOut,
+  ArrowRight,
+} from "lucide-react"
 import { vaultApi, planApi } from "@/lib/api"
 import type { Vault, VaultStatus } from "@/lib/types"
 
-const STATUS_LABEL: Record<VaultStatus, { text: string; color: string }> = {
-  pending: { text: "等待中", color: "bg-slate-100 text-slate-600" },
-  processing: { text: "AI 处理中", color: "bg-amber-100 text-amber-700" },
-  done: { text: "已完成", color: "bg-emerald-100 text-emerald-700" },
-  failed: { text: "失败", color: "bg-red-100 text-red-700" },
+const STATUS_META: Record<
+  VaultStatus,
+  { label: string; bg: string; text: string; icon: typeof Clock }
+> = {
+  pending: {
+    label: "排队中",
+    bg: "bg-[#f1f1ef]",
+    text: "text-[#787774]",
+    icon: Clock,
+  },
+  processing: {
+    label: "AI 生成中",
+    bg: "bg-[#f4efff]",
+    text: "text-[#6940a5]",
+    icon: Sparkles,
+  },
+  done: {
+    label: "已完成",
+    bg: "bg-[#eaf5ec]",
+    text: "text-[#2d7a45]",
+    icon: CheckCircle2,
+  },
+  failed: {
+    label: "失败",
+    bg: "bg-[#fbeae9]",
+    text: "text-[#c4332e]",
+    icon: AlertCircle,
+  },
+}
+
+function fileIcon(filename: string) {
+  const ext = filename.toLowerCase().split(".").pop()
+  if (ext === "pdf") return FileText
+  if (ext === "docx" || ext === "doc") return FileType2
+  return FileText
 }
 
 export default function VaultPage() {
@@ -18,6 +60,7 @@ export default function VaultPage() {
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
+  const [userEmail, setUserEmail] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -27,10 +70,13 @@ export default function VaultPage() {
       router.replace("/login")
       return
     }
+    try {
+      const u = JSON.parse(localStorage.getItem("user") || "null")
+      if (u?.email) setUserEmail(u.email)
+    } catch {}
     refreshList()
   }, [router])
 
-  // 轮询所有未完成的 vault 状态
   useEffect(() => {
     const pendingIds = vaults
       .filter((v) => v.status === "pending" || v.status === "processing")
@@ -92,29 +138,40 @@ export default function VaultPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">📚</span>
-            <span className="font-semibold text-slate-900">StudyHere</span>
+    <main className="min-h-screen bg-white">
+      <nav className="border-b border-[#e9e9e8] bg-white sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-[#37352f] text-white flex items-center justify-center font-bold text-xs">
+              S
+            </div>
+            <span className="font-semibold text-[#37352f] text-[15px]">
+              StudyHere
+            </span>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-slate-500 hover:text-slate-900 transition"
-          >
-            退出
-          </button>
+          <div className="flex items-center gap-3 text-[13px] text-[#787774]">
+            {userEmail && <span>{userEmail}</span>}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[#f1f1ef] transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              退出
+            </button>
+          </div>
         </div>
       </nav>
 
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <h1 className="text-2xl font-bold text-slate-900">我的资料库</h1>
-        <p className="mt-1 text-slate-500 text-sm">
-          上传 PDF / Word 文件，AI 会自动生成 14 天学习计划 + 闪卡 + 题目
-        </p>
+        <div>
+          <h1 className="text-[28px] font-bold text-[#37352f] tracking-tight">
+            我的资料库
+          </h1>
+          <p className="mt-1 text-[14px] text-[#787774]">
+            上传 PDF / Word，AI 会自动生成学习计划、闪卡和题目
+          </p>
+        </div>
 
-        {/* 上传区 */}
         <div
           onDragOver={(e) => {
             e.preventDefault()
@@ -128,92 +185,127 @@ export default function VaultPage() {
             if (file) handleUpload(file)
           }}
           onClick={() => fileInputRef.current?.click()}
-          className={`mt-6 rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition ${
+          className={`mt-6 rounded-xl border-2 border-dashed p-10 cursor-pointer transition-all duration-200 ${
             dragOver
-              ? "border-indigo-500 bg-indigo-50"
-              : "border-slate-300 bg-white hover:border-indigo-400 hover:bg-indigo-50/30"
+              ? "border-[#6940a5] bg-[#f4efff]"
+              : "border-[#e9e9e8] bg-[#fbfbfa] hover:border-[#9b9a97] hover:bg-white"
           }`}
         >
-          <div className="text-4xl mb-3">{uploading ? "⏳" : "📥"}</div>
-          <div className="text-slate-900 font-medium">
-            {uploading ? "上传中..." : "拖拽文件到这里，或点击选择"}
+          <div className="flex flex-col items-center text-center">
+            <div
+              className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+                uploading ? "bg-[#f4efff]" : "bg-white border border-[#e9e9e8]"
+              }`}
+            >
+              {uploading ? (
+                <Loader2 className="w-5 h-5 text-[#6940a5] animate-spin" />
+              ) : (
+                <Upload className="w-5 h-5 text-[#37352f]" />
+              )}
+            </div>
+            <div className="mt-4 text-[15px] font-medium text-[#37352f]">
+              {uploading ? "上传中" : "拖拽文件到这里，或点击选择"}
+            </div>
+            <div className="mt-1 text-[13px] text-[#9b9a97]">
+              PDF · Word · TXT · 单文件最大 10MB
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.docx,.doc,.txt"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleUpload(file)
+                e.target.value = ""
+              }}
+            />
           </div>
-          <div className="text-slate-400 text-sm mt-1">
-            支持 PDF / Word / TXT，单文件最大 10MB
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.docx,.doc,.txt"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) handleUpload(file)
-              e.target.value = ""
-            }}
-          />
         </div>
 
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+          <div className="mt-4 px-4 py-2.5 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
             {error}
           </div>
         )}
 
-        {/* Vault 列表 */}
-        <h2 className="mt-10 text-lg font-semibold text-slate-900">
-          历史上传 ({vaults.length})
-        </h2>
-        <div className="mt-4 space-y-3">
-          {vaults.length === 0 && (
-            <div className="text-center text-slate-400 py-12 text-sm">
-              还没有上传过资料，开始上传你的第一份吧
+        <div className="mt-12 flex items-baseline justify-between">
+          <h2 className="text-[15px] font-semibold text-[#37352f]">
+            历史上传
+          </h2>
+          <span className="text-[13px] text-[#9b9a97]">{vaults.length} 份</span>
+        </div>
+
+        <div className="mt-3 nt-card divide-y divide-[#e9e9e8]">
+          {vaults.length === 0 ? (
+            <div className="px-6 py-16 flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-lg bg-[#f1f1ef] flex items-center justify-center">
+                <FileText className="w-5 h-5 text-[#9b9a97]" />
+              </div>
+              <p className="mt-4 text-[14px] text-[#787774]">
+                还没有上传过资料
+              </p>
+              <p className="mt-1 text-[13px] text-[#9b9a97]">
+                拖一份你正在学的 PDF 进来试试
+              </p>
             </div>
-          )}
-          {vaults.map((v) => {
-            const status = STATUS_LABEL[v.status]
-            return (
-              <div
-                key={v.id}
-                className="bg-white rounded-xl border border-slate-200 p-4 flex items-center justify-between hover:border-indigo-300 transition"
-              >
-                <div className="flex items-center gap-4 min-w-0 flex-1">
-                  <div className="text-2xl flex-shrink-0">📄</div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-slate-900 truncate">
-                      {v.filename}
+          ) : (
+            vaults.map((v) => {
+              const meta = STATUS_META[v.status]
+              const StatusIcon = meta.icon
+              const FileIcon = fileIcon(v.filename)
+              return (
+                <div
+                  key={v.id}
+                  className="px-5 py-3.5 flex items-center justify-between hover:bg-[#fbfbfa] transition-colors duration-150"
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-9 h-9 rounded-md bg-[#f1f1ef] flex items-center justify-center flex-shrink-0">
+                      <FileIcon className="w-4 h-4 text-[#37352f]" />
                     </div>
-                    <div className="text-xs text-slate-400 mt-0.5">
-                      {new Date(v.createdAt).toLocaleString("zh-CN")}
-                    </div>
-                    {v.errorMsg && (
-                      <div className="text-xs text-red-600 mt-1">
-                        {v.errorMsg}
+                    <div className="min-w-0">
+                      <div className="text-[14px] font-medium text-[#37352f] truncate">
+                        {v.filename}
                       </div>
+                      <div className="text-[12px] text-[#9b9a97] mt-0.5">
+                        {new Date(v.createdAt).toLocaleString("zh-CN", {
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                      {v.errorMsg && (
+                        <div className="text-[12px] text-red-600 mt-1">
+                          {v.errorMsg}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[12px] font-medium ${meta.bg} ${meta.text}`}
+                    >
+                      <StatusIcon
+                        className={`w-3 h-3 ${v.status === "processing" ? "animate-pulse" : ""}`}
+                      />
+                      {meta.label}
+                    </span>
+                    {v.status === "done" && (
+                      <button
+                        onClick={() => router.push(`/plan/${v.id}`)}
+                        className="inline-flex items-center gap-1 text-[13px] font-medium text-[#37352f] hover:text-[#6940a5] transition-colors"
+                      >
+                        去学习
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span
-                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${status.color}`}
-                  >
-                    {v.status === "processing" && (
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse" />
-                    )}
-                    {status.text}
-                  </span>
-                  {v.status === "done" && (
-                    <button
-                      onClick={() => router.push(`/plan/pln-001`)}
-                      className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                    >
-                      去学习 →
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
       </div>
     </main>

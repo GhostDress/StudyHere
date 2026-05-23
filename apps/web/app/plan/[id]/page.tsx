@@ -2,6 +2,15 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import {
+  ArrowLeft,
+  Sparkles,
+  Layers,
+  Pencil,
+  Clock,
+  Target,
+  BookOpen,
+} from "lucide-react"
 import { planApi } from "@/lib/api"
 import type { StudyPlan } from "@/lib/types"
 
@@ -43,8 +52,8 @@ export default function PlanDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center text-slate-400 text-sm">
-        加载中...
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="text-[#9b9a97] text-sm">加载中</div>
       </main>
     )
   }
@@ -52,11 +61,12 @@ export default function PlanDetailPage() {
   if (error || !plan) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-3">
-        <div className="text-red-600">{error || "计划不存在"}</div>
+        <div className="text-[#787774]">{error || "计划不存在"}</div>
         <button
           onClick={() => router.push("/vault")}
-          className="text-sm text-indigo-600"
+          className="nt-btn-ghost"
         >
+          <ArrowLeft className="w-4 h-4" />
           返回资料库
         </button>
       </main>
@@ -65,83 +75,128 @@ export default function PlanDetailPage() {
 
   const planData = plan.planData as PlanData | undefined
   const days = planData?.days ?? []
+  const totalMinutes = days.reduce((sum, d) => sum + d.estimatedMinutes, 0)
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <nav className="bg-white border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+    <main className="min-h-screen bg-white">
+      <nav className="border-b border-[#e9e9e8] bg-white sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <button
             onClick={() => router.push("/vault")}
-            className="text-slate-500 hover:text-slate-900 text-sm flex items-center gap-2"
+            className="flex items-center gap-1.5 text-[13px] text-[#787774] hover:text-[#37352f] transition-colors"
           >
-            ← 返回资料库
+            <ArrowLeft className="w-4 h-4" />
+            资料库
           </button>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">📚</span>
-            <span className="font-semibold text-slate-900">StudyHere</span>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-[#37352f] text-white flex items-center justify-center font-bold text-xs">
+              S
+            </div>
+            <span className="font-semibold text-[#37352f] text-[15px]">
+              StudyHere
+            </span>
           </div>
         </div>
       </nav>
 
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <h1 className="text-2xl font-bold text-slate-900">{plan.title}</h1>
-        <p className="mt-1 text-slate-500 text-sm">
-          共 {plan.totalDays} 天 · 每天约 60 分钟 · AI 生成
-        </p>
+        <span className="nt-tag-ai">
+          <Sparkles className="w-3 h-3" />
+          AI 生成
+        </span>
+        <h1 className="mt-4 text-[32px] font-bold text-[#37352f] tracking-tight leading-tight">
+          {plan.title}
+        </h1>
+        <div className="mt-3 flex items-center gap-4 text-[13px] text-[#787774]">
+          <span className="inline-flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5" />
+            {plan.totalDays} 天
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            共约 {Math.round(totalMinutes / 60)} 小时
+          </span>
+        </div>
 
-        <div className="mt-6 flex gap-3">
+        <div className="mt-7 flex gap-2.5">
           <button
             onClick={() => router.push(`/flashcard/${plan.id}`)}
-            className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition"
+            className="nt-btn-ai"
           >
-            🎴 开始闪卡复习
+            <Layers className="w-4 h-4" />
+            闪卡复习
           </button>
           <button
             onClick={() => router.push(`/quiz/${plan.id}`)}
-            className="px-5 py-2.5 rounded-lg bg-white border border-slate-200 hover:border-indigo-400 text-slate-900 text-sm font-medium transition"
+            className="nt-btn-ghost border border-[#e9e9e8]"
           >
-            ✏️ 开始答题练习
+            <Pencil className="w-4 h-4" />
+            答题练习
           </button>
         </div>
 
-        <h2 className="mt-10 text-lg font-semibold text-slate-900">
-          每日学习内容
-        </h2>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-12 mb-5">
+          <h2 className="text-[15px] font-semibold text-[#37352f]">
+            每日学习内容
+          </h2>
+          <p className="text-[13px] text-[#9b9a97] mt-1">
+            点击日期卡片查看详情
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {days.map((day) => (
             <div
               key={day.day}
-              className="bg-white rounded-xl border border-slate-200 p-5 hover:border-indigo-300 hover:shadow-sm transition"
+              className="nt-card p-5 hover:border-[#37352f] hover:shadow-[0_2px_8px_rgba(15,15,15,0.06)] transition-all duration-200"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-md bg-[#37352f] text-white flex items-center justify-center text-[12px] font-semibold">
                     {day.day}
                   </div>
-                  <div className="text-xs text-slate-400">{day.date}</div>
+                  <span className="text-[12px] text-[#9b9a97]">
+                    {day.date}
+                  </span>
                 </div>
-                <div className="text-xs text-slate-400">
-                  ⏱ {day.estimatedMinutes} 分钟
-                </div>
+                <span className="inline-flex items-center gap-1 text-[12px] text-[#9b9a97]">
+                  <Clock className="w-3 h-3" />
+                  {day.estimatedMinutes} 分钟
+                </span>
               </div>
 
-              <div className="text-sm font-medium text-slate-900 mb-2">
-                主题
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-[#9b9a97] font-semibold mb-1.5">
+                  主题
+                </div>
+                <ul className="space-y-1">
+                  {day.topics.map((t, i) => (
+                    <li
+                      key={i}
+                      className="text-[14px] text-[#37352f] leading-relaxed"
+                    >
+                      · {t}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="text-sm text-slate-600 space-y-1 mb-3">
-                {day.topics.map((t, i) => (
-                  <li key={i}>· {t}</li>
-                ))}
-              </ul>
 
-              <div className="text-sm font-medium text-slate-900 mb-2">
-                目标
+              <div className="mt-4">
+                <div className="text-[11px] uppercase tracking-wider text-[#9b9a97] font-semibold mb-1.5 flex items-center gap-1">
+                  <Target className="w-3 h-3" />
+                  目标
+                </div>
+                <ul className="space-y-1">
+                  {day.goals.map((g, i) => (
+                    <li
+                      key={i}
+                      className="text-[14px] text-[#787774] leading-relaxed"
+                    >
+                      · {g}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="text-sm text-slate-600 space-y-1">
-                {day.goals.map((g, i) => (
-                  <li key={i}>· {g}</li>
-                ))}
-              </ul>
             </div>
           ))}
         </div>

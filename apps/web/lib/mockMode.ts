@@ -7,7 +7,8 @@
 // 切换方式：改下面的常量，或通过 .env 的 NEXT_PUBLIC_USE_MOCK
 // ============================================================
 
-export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false"
+// 默认走真后端（dev-ai-server 在 3001）。要走 mock，设置 NEXT_PUBLIC_USE_MOCK=true
+export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true"
 
 /**
  * 模拟网络延迟，让 mock 模式更像真实接口
