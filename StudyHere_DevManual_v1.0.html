@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>StudyHere 商业级前后端开发手册 v1.0</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    max-width: 1280px; margin: 0 auto; padding: 40px 36px 100px;
+    color: #1f2329; line-height: 1.75; background: #fafbfc;
+  }
+  .doc-header {
+    text-align: center; padding: 48px 0 32px;
+    background: linear-gradient(135deg, #1a6ee0 0%, #722ed1 100%);
+    border-radius: 16px; margin-bottom: 48px; color: #fff;
+  }
+  .doc-header h1 { font-size: 34px; margin: 0 0 10px; letter-spacing: -0.5px; }
+  .doc-header .sub { font-size: 16px; opacity: .85; margin: 0 0 20px; }
+  .doc-meta { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .doc-meta span { padding: 4px 14px; background: rgba(255,255,255,.18); border-radius: 20px; font-size: 13px; }
+  h1 { font-size: 28px; border-bottom: 2px solid #e5e6eb; padding-bottom: 12px; margin-top: 56px; color: #1f2329; }
+  h2 { font-size: 22px; margin-top: 36px; padding: 10px 16px; border-left: 5px solid #1a6ee0;
+    background: linear-gradient(90deg, #f0f5ff 0%, transparent 100%); color: #1f2329; }
+  h3 { font-size: 18px; margin-top: 28px; color: #2c3140; border-bottom: 1px dashed #e5e6eb; padding-bottom: 6px; }
+  h4 { font-size: 15px; margin-top: 20px; color: #4e5969; }
+  .mermaid {
+    background: #fff; border: 1px solid #e5e6eb; border-radius: 10px;
+    padding: 28px 16px; margin: 20px 0; overflow-x: auto; text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; background: #fff;
+    border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); font-size: 14px; }
+  th, td { border: 1px solid #e5e6eb; padding: 10px 14px; text-align: left; vertical-align: top; }
+  th { background: #f2f3f5; font-weight: 600; color: #2c3140; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  code { background: #f2f3f5; padding: 2px 7px; border-radius: 4px;
+    font-family: "SF Mono", Consolas, Monaco, monospace; font-size: 13px; color: #d4380d; }
+  pre { background: #1d2129; color: #e8e8e8; padding: 18px 22px; border-radius: 8px;
+    overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 16px 0; }
+  pre code { background: transparent; padding: 0; color: inherit; }
+  blockquote { border-left: 4px solid #1a6ee0; padding: 12px 18px; margin: 16px 0;
+    background: #f0f5ff; color: #2c3140; border-radius: 0 6px 6px 0; }
+  ul, ol { padding-left: 26px; }
+  li { margin: 5px 0; }
+  .tag { display: inline-block; padding: 2px 9px; background: #e8f3ff; color: #1a6ee0;
+    border-radius: 4px; font-size: 12px; margin-right: 5px; font-weight: 500; }
+  .tag-green { background: #f6ffed; color: #389e0d; }
+  .tag-purple { background: #f9f0ff; color: #722ed1; }
+  .tag-orange { background: #fff7e6; color: #d46b08; }
+  .tag-red { background: #fff1f0; color: #cf1322; }
+  .tag-gray { background: #f5f5f5; color: #595959; }
+  .toc { background: #fff; border: 1px solid #e5e6eb; border-radius: 10px; padding: 24px 28px; margin: 28px 0; }
+  .toc h3 { margin-top: 0; border: none; padding: 0; font-size: 17px; }
+  .toc ol { list-style: none; padding-left: 0; column-count: 2; column-gap: 32px; }
+  .toc ol li { padding: 5px 0; font-size: 14px; }
+  .toc ol li a { color: #1a6ee0; text-decoration: none; }
+  .toc ol li a:hover { text-decoration: underline; }
+  .person-card {
+    display: inline-block; width: calc(50% - 12px); margin: 6px;
+    background: #fff; border: 1px solid #e5e6eb; border-radius: 10px;
+    padding: 18px 20px; vertical-align: top; box-shadow: 0 2px 6px rgba(0,0,0,.05);
+  }
+  .person-card h4 { margin: 0 0 8px; font-size: 16px; }
+  .person-card .role { font-size: 12px; color: #1a6ee0; background: #e8f3ff; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 10px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .badge-p0 { background: #fff1f0; color: #cf1322; }
+  .badge-p1 { background: #fff7e6; color: #d46b08; }
+  .badge-p2 { background: #e6f4ff; color: #1a6ee0; }
+  .badge-p3 { background: #f5f5f5; color: #595959; }
+  .tip { background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; padding: 12px 16px; margin: 12px 0; font-size: 14px; }
+  .warn { background: #fff7e6; border: 1px solid #ffd591; border-radius: 6px; padding: 12px 16px; margin: 12px 0; font-size: 14px; }
+  .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: #86909c; font-weight: 700; margin-bottom: 6px; }
+  hr { border: none; border-top: 1px solid #e5e6eb; margin: 40px 0; }
+  @media (max-width: 768px) {
+    .person-card { width: 100%; margin: 6px 0; }
+    .toc ol { column-count: 1; }
+    body { padding: 20px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <h1>StudyHere · 商业级前后端开发手册</h1>
+  <p class="sub">面向 AI Coding 的全栈研发规范 · GitHub 协作 · 人员分工</p>
+  <div class="doc-meta">
+    <span>版本 v1.0</span>
+    <span>团队规模 4人</span>
+    <span>2026-05-22</span>
+    <span>基于 PRD v2.0</span>
+    <span>AI Coding 驱动</span>
+  </div>
+</div>
+
+<div class="toc">
+  <h3>文档导航</h3>
+  <ol>
+    <li><a href="#ch1">一、技术选型与架构总览</a></li>
+    <li><a href="#ch2">二、Monorepo 仓库结构</a></li>
+    <li><a href="#ch3">三、GitHub 代码管理规范</a></li>
+    <li><a href="#ch4">四、CI/CD 流水线</a></li>
+    <li><a href="#ch5">五、面向 AI 的构建逻辑</a></li>
+    <li><a href="#ch6">六、人员分配手册</a></li>
+    <li><a href="#ch7">七、开发阶段排期</a></li>
+    <li><a href="#ch8">八、AI Pipeline 技术规范</a></li>
+    <li><a href="#ch9">九、API 设计规范</a></li>
+    <li><a href="#ch10">十、数据模型设计</a></li>
+  </ol>
+</div>
+
+<!-- ============ Chapter 1 ============ -->
+<h1 id="ch1">一、技术选型与架构总览</h1>
+
+<h2>1.1 技术栈全景</h2>
+
+<table>
+<tr><th>层次</th><th>技术选型</th><th>版本</th><th>选型理由</th></tr>
+<tr><td><span class="tag">前端框架</span></td><td>Next.js (App Router)</td><td>14.x</td><td>SSR/SSG + SEO + Vercel 原生集成，AI生成代码友好</td></tr>
+<tr><td><span class="tag">前端语言</span></td><td>TypeScript</td><td>5.x</td><td>类型安全，AI Coding 推断精准，减少运行时错误</td></tr>
+<tr><td><span class="tag">UI 组件</span></td><td>Tailwind CSS + shadcn/ui</td><td>3.x</td><td>原子类+高质量组件，v0.dev 生成友好</td></tr>
+<tr><td><span class="tag">客户端状态</span></td><td>Zustand</td><td>4.x</td><td>轻量，AI可一次性生成完整 store</td></tr>
+<tr><td><span class="tag">服务端状态</span></td><td>TanStack Query</td><td>5.x</td><td>缓存+乐观更新+错误处理标准化</td></tr>
+<tr><td><span class="tag-green">后端框架</span></td><td>Hono.js</td><td>4.x</td><td>TypeScript 原生，极轻量，Edge Runtime 兼容</td></tr>
+<tr><td><span class="tag-green">ORM</span></td><td>Prisma</td><td>5.x</td><td>类型自动生成，AI 代码推断精准</td></tr>
+<tr><td><span class="tag-green">数据库</span></td><td>PostgreSQL (Supabase)</td><td>15.x</td><td>托管服务，RLS 权限，实时功能</td></tr>
+<tr><td><span class="tag-green">文件存储</span></td><td>Supabase Storage</td><td>—</td><td>与 DB 同一平台，权限控制统一</td></tr>
+<tr><td><span class="tag-green">缓存/队列</span></td><td>Upstash Redis + BullMQ</td><td>—</td><td>Serverless Redis，异步 AI 任务处理</td></tr>
+<tr><td><span class="tag-purple">AI 主力</span></td><td>GPT-4o / GPT-4o-mini</td><td>—</td><td>质量与成本平衡，结构化输出稳定</td></tr>
+<tr><td><span class="tag-purple">AI 备用</span></td><td>Claude Haiku / DeepSeek</td><td>—</td><td>降低单点风险，成本备选</td></tr>
+<tr><td><span class="tag-orange">前端部署</span></td><td>Vercel</td><td>—</td><td>Next.js 原生，Preview URL，CI 集成</td></tr>
+<tr><td><span class="tag-orange">后端部署</span></td><td>Railway</td><td>—</td><td>Docker 部署，自动扩缩，简单环境变量管理</td></tr>
+<tr><td><span class="tag-orange">监控</span></td><td>Sentry + Vercel Analytics</td><td>—</td><td>前后端错误追踪，性能监控</td></tr>
+<tr><td><span class="tag-gray">构建工具</span></td><td>Turborepo</td><td>2.x</td><td>Monorepo 增量构建，任务并行</td></tr>
+<tr><td><span class="tag-gray">包管理</span></td><td>pnpm</td><td>9.x</td><td>Monorepo 磁盘占用低，workspace 支持好</td></tr>
+</table>
+
+<h2>1.2 系统架构全景图</h2>
+
+<div class="mermaid">
+flowchart TB
+    subgraph CLIENT["客户端层"]
+        Browser["浏览器\nPC / 移动端"]
+    end
+
+    subgraph FRONTEND["前端层 · Vercel"]
+        Web["Next.js 14\nApp Router + SSR"]
+        UI["Tailwind + shadcn/ui\n组件库"]
+        State["Zustand\nTanStack Query"]
+    end
+
+    subgraph BACKEND["后端层 · Railway"]
+        API["Hono.js\nREST API Server"]
+        Worker["BullMQ Workers\nAI 异步任务处理"]
+    end
+
+    subgraph DATA["数据层"]
+        PG[("PostgreSQL\nSupabase")]
+        Storage["Supabase Storage\n文件存储"]
+        Redis[("Upstash Redis\n缓存 + 任务队列")]
+    end
+
+    subgraph AISERVICE["AI 服务层"]
+        GPT4o["GPT-4o\n知识点提炼"]
+        GPTmini["GPT-4o-mini\n预检 / 闪卡 / 题目"]
+        Backup["Claude Haiku\n备用降级"]
+    end
+
+    Browser -->|"HTTPS"| Web
+    Web -->|"REST API\n/api/v1/*"| API
+    API -->|"SQL / Prisma"| PG
+    API -->|"文件读写"| Storage
+    API -->|"缓存读写"| Redis
+    API -->|"投递 Job"| Redis
+    Worker -->|"消费 Job"| Redis
+    Worker -->|"LLM 调用"| GPT4o
+    Worker -->|"LLM 调用"| GPTmini
+    Worker -.->|"失败降级"| Backup
+    Worker -->|"写入结果"| PG
+
+    style CLIENT fill:#fff7e6,stroke:#fa8c16
+    style FRONTEND fill:#e6f4ff,stroke:#1a6ee0
+    style BACKEND fill:#f9f0ff,stroke:#722ed1
+    style DATA fill:#f6ffed,stroke:#52c41a
+    style AISERVICE fill:#fff1f0,stroke:#cf1322
+</div>
+
+<h2>1.3 前后端分离接口边界</h2>
+
+<div class="mermaid">
+flowchart LR
+    subgraph FE["前端 apps/web"]
+        Page["Next.js Pages\n页面与路由"]
+        Comp["React Components\nUI 组件"]
+        Hook["Custom Hooks\nTanStack Query"]
+        ZStore["Zustand Store\n客户端状态"]
+    end
+
+    subgraph CONTRACT["接口契约层\npackages/types"]
+        Types["TypeScript 类型\nAPI Request / Response"]
+        Zod["Zod Schema\n入参校验"]
+    end
+
+    subgraph BE["后端 apps/api"]
+        Router["Hono Router\n路由分发"]
+        Handler["Business Handler\n业务处理"]
+        Service["Service Layer\n核心逻辑"]
+        Prisma["Prisma ORM\n数据访问"]
+    end
+
+    Hook -->|"使用共享类型"| Types
+    Router -->|"使用共享类型"| Types
+    Zod -->|"校验请求"| Router
+    Page --> Comp
+    Comp --> Hook
+    Hook -->|"HTTP 请求"| Router
+    Router --> Handler
+    Handler --> Service
+    Service --> Prisma
+
+    style CONTRACT fill:#fff7e6,stroke:#fa8c16,color:#1f2329
+    style FE fill:#e6f4ff,stroke:#1a6ee0
+    style BE fill:#f9f0ff,stroke:#722ed1
+</div>
+
+<!-- ============ Chapter 2 ============ -->
+<h1 id="ch2">二、Monorepo 仓库结构</h1>
+
+<h2>2.1 仓库目录总览</h2>
+
+<pre><code>studyhere/                        # GitHub 仓库根目录
+├── apps/
+│   ├── web/                      # Next.js 14 前端
+│   │   ├── app/                  # App Router 页面
+│   │   │   ├── (auth)/           # 登录注册路由组
+│   │   │   ├── (main)/           # 主功能路由组
+│   │   │   │   ├── page.tsx      # 首页 /
+│   │   │   │   ├── create/       # 创建宝库 /create
+│   │   │   │   ├── vault/[id]/   # 宝库详情 /vault/:id
+│   │   │   │   └── samples/      # 推荐资料 /samples
+│   │   │   └── layout.tsx
+│   │   ├── components/           # 共享 UI 组件
+│   │   │   ├── ui/               # shadcn/ui 基础组件
+│   │   │   ├── flashcard/        # 闪卡组件
+│   │   │   ├── quiz/             # 题目组件
+│   │   │   └── progress/         # 进度展示组件
+│   │   ├── hooks/                # 自定义 Hooks
+│   │   ├── stores/               # Zustand Stores
+│   │   └── lib/                  # 工具函数
+│   │
+│   └── api/                      # Hono.js 后端
+│       ├── src/
+│       │   ├── routes/           # 路由定义
+│       │   │   ├── auth.ts       # 认证路由
+│       │   │   ├── vaults.ts     # 宝库 CRUD
+│       │   │   ├── study.ts      # 学习模块
+│       │   │   ├── practice.ts   # 练习模块
+│       │   │   ├── exam.ts       # 考试模块
+│       │   │   ├── wrong.ts      # 错题模块
+│       │   │   └── progress.ts   # 进度模块
+│       │   ├── services/         # 业务逻辑层
+│       │   ├── workers/          # BullMQ Worker
+│       │   │   ├── ai-precheck.ts
+│       │   │   ├── ai-extract.ts
+│       │   │   └── ai-generate.ts
+│       │   ├── lib/
+│       │   │   ├── prisma.ts     # Prisma 客户端
+│       │   │   ├── redis.ts      # Redis 客户端
+│       │   │   └── openai.ts     # OpenAI 客户端
+│       │   └── index.ts
+│       └── prisma/
+│           ├── schema.prisma     # 数据库 Schema
+│           └── migrations/
+│
+├── packages/
+│   ├── types/                    # 共享 TypeScript 类型 ⭐
+│   │   └── src/
+│   │       ├── api.ts            # API 请求/响应类型
+│   │       ├── models.ts         # 数据模型类型
+│   │       └── enums.ts          # 枚举值
+│   ├── utils/                    # 共享工具函数
+│   └── config/                   # 共享配置 (ESLint, TSConfig)
+│
+├── docs/
+│   ├── architecture.md           # 架构决策记录 (ADR)
+│   ├── api-spec.md               # API 接口规范
+│   └── prompts/                  # LLM Prompt 版本管理 ⭐
+│       ├── precheck-v1.txt
+│       ├── extract-v1.txt
+│       ├── flashcard-v1.txt
+│       └── quiz-v1.txt
+│
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml                # PR 检查流水线
+│   │   └── deploy.yml            # 部署流水线
+│   └── PULL_REQUEST_TEMPLATE.md  # PR 模板
+│
+├── CLAUDE.md                     # AI 上下文核心文件 ⭐
+├── turbo.json                    # Turborepo 配置
+├── pnpm-workspace.yaml
+└── package.json</code></pre>
+
+<div class="tip">⭐ <strong>三个核心文件</strong>：<code>packages/types/</code>（类型契约）、<code>docs/prompts/</code>（Prompt 版本管理）、<code>CLAUDE.md</code>（AI 上下文）是面向 AI Coding 的基础设施，必须优先建立。</div>
+
+<h2>2.2 CLAUDE.md 核心内容规范</h2>
+
+<pre><code># StudyHere — AI 上下文文件
+
+## 项目简介
+AI 学习闭环平台。用户上传资料+设定目标 → AI生成学习计划 → 学练考纠全闭环。
+
+## 技术栈
+- Frontend: Next.js 14 App Router + TypeScript + Tailwind + shadcn/ui
+- Backend: Hono.js + Prisma + PostgreSQL (Supabase)
+- AI: OpenAI GPT-4o / GPT-4o-mini (见 apps/api/src/lib/openai.ts)
+- Queue: BullMQ + Upstash Redis
+
+## 代码规范
+- 所有文件使用 TypeScript，禁止 any
+- API 响应统一格式: { success: boolean, data?: T, error?: string }
+- 错误处理: 使用 Result 类型，不 throw 到业务层
+- 组件命名: PascalCase；函数/变量: camelCase
+
+## 共享类型位置
+所有 API 类型定义在 packages/types/src/ 下，前后端复用。
+
+## 常用命令
+pnpm dev          # 启动所有服务
+pnpm build        # 全量构建
+pnpm test         # 运行测试
+pnpm db:migrate   # 执行数据库迁移</code></pre>
+
+<!-- ============ Chapter 3 ============ -->
+<h1 id="ch3">三、GitHub 代码管理规范</h1>
+
+<h2>3.1 分支策略</h2>
+
+<div class="mermaid">
+flowchart LR
+    subgraph PROT["🔒 受保护分支（禁止直推）"]
+        main["main\n生产环境\n标签版本"]
+        develop["develop\n集成测试\nStaging 自动部署"]
+    end
+
+    subgraph WORK["工作分支（从 develop 切出）"]
+        f1["feature/auth-phone-login"]
+        f2["feature/ai-precheck"]
+        f3["feature/study-flashcard"]
+        f4["feature/practice-quiz"]
+        f5["fix/pdf-parse-error"]
+    end
+
+    subgraph HOT["紧急修复"]
+        hf["hotfix/jwt-expiry\n从 main 切出"]
+    end
+
+    f1 -->|"PR + Review"| develop
+    f2 -->|"PR + Review"| develop
+    f3 -->|"PR + Review"| develop
+    f4 -->|"PR + Review"| develop
+    f5 -->|"PR + Review"| develop
+    develop -->|"Sprint 发布 + Tag"| main
+    hf -->|"紧急 PR"| main
+    hf -.->|"同步回"| develop
+
+    style main fill:#d4f4dd,stroke:#52c41a
+    style develop fill:#cfe2ff,stroke:#1a6ee0
+    style PROT fill:#f0f5ff,stroke:#1a6ee0
+    style WORK fill:#fff7e6,stroke:#fa8c16
+    style HOT fill:#fff1f0,stroke:#cf1322
+</div>
+
+<h2>3.2 分支命名规范</h2>
+
+<table>
+<tr><th>类型</th><th>格式</th><th>示例</th></tr>
+<tr><td><span class="tag-green">功能开发</span></td><td><code>feature/&lt;模块&gt;-&lt;描述&gt;</code></td><td><code>feature/auth-phone-login</code></td></tr>
+<tr><td><span class="tag-orange">问题修复</span></td><td><code>fix/&lt;简短描述&gt;</code></td><td><code>fix/pdf-parse-encoding</code></td></tr>
+<tr><td><span class="tag-red">紧急修复</span></td><td><code>hotfix/&lt;简短描述&gt;</code></td><td><code>hotfix/jwt-validation-bypass</code></td></tr>
+<tr><td><span class="tag-gray">重构</span></td><td><code>refactor/&lt;描述&gt;</code></td><td><code>refactor/prisma-query-optimize</code></td></tr>
+<tr><td><span class="tag-gray">文档</span></td><td><code>docs/&lt;描述&gt;</code></td><td><code>docs/api-spec-update</code></td></tr>
+</table>
+
+<h2>3.3 Commit 信息规范（Conventional Commits）</h2>
+
+<pre><code>&lt;type&gt;(&lt;scope&gt;): &lt;简短描述&gt;
+
+[可选 body：详细说明]
+[可选 footer：关联 Issue]
+
+# 示例
+feat(auth): add phone SMS login with rate limiting
+fix(pdf-parser): handle encrypted PDF gracefully
+feat(ai): add knowledge extraction with GPT-4o few-shot
+chore(deps): upgrade Prisma to 5.15.0
+test(study): add flashcard completion unit tests</code></pre>
+
+<table>
+<tr><th>类型</th><th>使用场景</th></tr>
+<tr><td><code>feat</code></td><td>新功能</td></tr>
+<tr><td><code>fix</code></td><td>Bug 修复</td></tr>
+<tr><td><code>refactor</code></td><td>重构（不改行为）</td></tr>
+<tr><td><code>test</code></td><td>添加/修改测试</td></tr>
+<tr><td><code>docs</code></td><td>文档更新</td></tr>
+<tr><td><code>chore</code></td><td>构建/依赖/工具配置</td></tr>
+<tr><td><code>perf</code></td><td>性能优化</td></tr>
+<tr><td><code>ci</code></td><td>CI/CD 配置</td></tr>
+</table>
+
+<h2>3.4 PR & Code Review 流程</h2>
+
+<div class="mermaid">
+flowchart TD
+    A["开发者完成本地开发\n自测通过"] --> B["推送分支到 GitHub\ngit push origin feature/xxx"]
+    B --> C["创建 Pull Request\n填写 PR 模板"]
+    C --> D["GitHub Actions 自动触发\nLint + TypeCheck + Test + Build"]
+    D --> E{自动检查通过?}
+    E -->|"❌ 失败"| F["开发者修复问题\n重新推送"]
+    F --> D
+    E -->|"✅ 通过"| G["指定 Reviewer\n技术负责人 必须 Review"]
+    G --> H["Code Review\n留评论 / 建议"]
+    H --> I{需要修改?}
+    I -->|"是"| J["作者响应评论\n提交修改"]
+    J --> H
+    I -->|"否"| K["Approve ✅\n至少 1 人批准"]
+    K --> L["Squash Merge 到 develop\n删除功能分支"]
+    L --> M["Staging 自动部署\n联调验证"]
+
+    style A fill:#f6ffed,stroke:#52c41a
+    style E fill:#fff7e6,stroke:#fa8c16
+    style I fill:#fff7e6,stroke:#fa8c16
+    style K fill:#f6ffed,stroke:#52c41a
+    style L fill:#e6f4ff,stroke:#1a6ee0
+</div>
+
+<h2>3.5 PR 模板（.github/PULL_REQUEST_TEMPLATE.md）</h2>
+
+<pre><code>## 变更概述
+&lt;简述本次 PR 做了什么&gt;
+
+## 关联需求
+- PRD 章节: F?
+- Issue: #?
+
+## 变更类型
+- [ ] 新功能 (feat)
+- [ ] Bug 修复 (fix)
+- [ ] 重构 (refactor)
+- [ ] 其他
+
+## 测试说明
+- [ ] 单元测试已覆盖核心逻辑
+- [ ] 本地联调通过
+- [ ] 移动端适配验证
+
+## AI 生成代码说明（如适用）
+- AI 工具: Cursor / Claude Code / v0.dev
+- 人工 Review 重点: &lt;说明哪些逻辑需要重点看&gt;
+
+## 截图（前端变更必填）</code></pre>
+
+<!-- ============ Chapter 4 ============ -->
+<h1 id="ch4">四、CI/CD 流水线</h1>
+
+<h2>4.1 整体流水线架构</h2>
+
+<div class="mermaid">
+flowchart LR
+    subgraph TRIGGER["触发条件"]
+        PR["PR 到 develop"]
+        Push["Push 到 develop/main"]
+    end
+
+    subgraph CI["CI 阶段 (ci.yml)"]
+        Lint["ESLint\nPrettier"]
+        TypeCheck["TypeScript\n类型检查"]
+        UnitTest["Vitest\n单元测试"]
+        Build["Turborepo\n构建产物"]
+    end
+
+    subgraph STAGING["Staging 部署"]
+        DeployStag["自动部署\nVercel Preview\nRailway Staging"]
+        SmokeTest["冒烟测试\n核心流程验证"]
+    end
+
+    subgraph PROD["生产部署"]
+        Tag["创建 Release Tag\nvX.X.X"]
+        DeployProd["生产部署\nVercel Prod\nRailway Prod"]
+        DBMigrate["数据库迁移\nprisma migrate deploy"]
+    end
+
+    PR --> Lint
+    Push --> Lint
+    Lint --> TypeCheck
+    TypeCheck --> UnitTest
+    UnitTest --> Build
+    Build -->|"develop 分支"| DeployStag
+    DeployStag --> SmokeTest
+    SmokeTest -->|"手动触发发布"| Tag
+    Tag --> DBMigrate
+    DBMigrate --> DeployProd
+
+    style CI fill:#f0f5ff,stroke:#1a6ee0
+    style STAGING fill:#fff7e6,stroke:#fa8c16
+    style PROD fill:#f6ffed,stroke:#52c41a
+</div>
+
+<h2>4.2 环境配置矩阵</h2>
+
+<table>
+<tr><th>环境</th><th>触发方式</th><th>前端 URL</th><th>后端 URL</th><th>数据库</th></tr>
+<tr><td><span class="tag-gray">development</span></td><td>本地 <code>pnpm dev</code></td><td>localhost:3000</td><td>localhost:3001</td><td>本地 Supabase</td></tr>
+<tr><td><span class="tag-orange">staging</span></td><td>push to develop</td><td>staging.studyhere.app</td><td>api-staging.studyhere.app</td><td>Supabase Staging 项目</td></tr>
+<tr><td><span class="tag-green">production</span></td><td>Release Tag</td><td>studyhere.app</td><td>api.studyhere.app</td><td>Supabase Prod 项目</td></tr>
+</table>
+
+<!-- ============ Chapter 5 ============ -->
+<h1 id="ch5">五、面向 AI 的构建逻辑</h1>
+
+<blockquote>
+<strong>核心原则</strong>：AI 负责实现，人负责架构决策、业务逻辑审查、安全验证。每一个 AI 生成的代码单元都必须经过人工 Review，重点检查：业务逻辑是否正确、安全边界是否充分、类型是否准确。
+</blockquote>
+
+<h2>5.1 AI Coding 核心工作流</h2>
+
+<div class="mermaid">
+flowchart TD
+    Start(["接收任务 / Issue"]) --> Decompose["任务原子化\n拆分为单一功能点\n目标：单次 PR < 400 行"]
+    Decompose --> Context["准备 AI 上下文\n① CLAUDE.md 项目规范\n② 相关类型定义\n③ 现有类似代码示例\n④ 接口契约 packages/types"]
+    Context --> Tool{"选择 AI 工具"}
+    Tool -->|"复杂架构/推理"| ClaudeCode["Claude Code\n完整功能模块生成"]
+    Tool -->|"日常编码"| Cursor["Cursor\n增量代码生成"]
+    Tool -->|"UI 组件"| V0["v0.dev\n组件快速生成"]
+    ClaudeCode --> Review
+    Cursor --> Review
+    V0 --> Review
+    Review["人工代码审查\n✅ 业务逻辑正确\n✅ 类型安全无 any\n✅ 无安全漏洞\n✅ 错误处理完整"]
+    Review --> Test["编写/完善测试\n单元测试 + 集成测试"]
+    Test --> Pass{测试通过?}
+    Pass -->|"❌"| Fix["修复 or 重新生成\n调整 Prompt 上下文"]
+    Fix --> Review
+    Pass -->|"✅"| Commit["提交代码\ngit commit -m 'feat(xxx): ...'"]
+    Commit --> PR["创建 PR\n关联 PRD 功能编号"]
+    PR --> Done(["合并到 develop"])
+
+    style Start fill:#d4f4dd,stroke:#52c41a
+    style Context fill:#e6f4ff,stroke:#1a6ee0
+    style Review fill:#fff7e6,stroke:#fa8c16
+    style Done fill:#d4f4dd,stroke:#52c41a
+</div>
+
+<h2>5.2 任务原子化拆解规范</h2>
+
+<div class="mermaid">
+flowchart LR
+    PRD["PRD 功能点\nF5·学·闪卡浏览"] --> Split["按前后端拆分"]
+    Split --> BE1["后端任务 1\nGET /vaults/:id/study/cards\n返回今日闪卡列表"]
+    Split --> BE2["后端任务 2\nPOST /vaults/:id/study/complete\n提交学习结果+计算掌握度"]
+    Split --> FE1["前端任务 1\nFlashCard 组件\n翻转动画+懂了/不懂按钮"]
+    Split --> FE2["前端任务 2\nStudyPage 页面\n加载状态+完成评估弹窗"]
+    Split --> AI1["AI任务 1\nai-generate Worker\n按知识点生成闪卡 Prompt"]
+
+    style PRD fill:#f9f0ff,stroke:#722ed1
+    style BE1 fill:#f6ffed,stroke:#52c41a
+    style BE2 fill:#f6ffed,stroke:#52c41a
+    style FE1 fill:#e6f4ff,stroke:#1a6ee0
+    style FE2 fill:#e6f4ff,stroke:#1a6ee0
+    style AI1 fill:#fff1f0,stroke:#cf1322
+</div>
+
+<h2>5.3 Prompt 工程规范</h2>
+
+<table>
+<tr><th>规范项</th><th>要求</th><th>示例</th></tr>
+<tr><td>结构化输出</td><td>所有 Prompt 强制要求 JSON 输出，用 <code>response_format: { type: "json_object" }</code></td><td>知识点提炼返回 <code>{"points": [...]}</code></td></tr>
+<tr><td>Few-shot 示例</td><td>每个 Prompt 包含 2-3 个高质量示例</td><td>在 <code>docs/prompts/</code> 中每个文件标注示例</td></tr>
+<tr><td>版本管理</td><td>Prompt 文件命名 <code>功能-v版本号.txt</code>，变更记录 changelog</td><td><code>extract-v2.txt</code></td></tr>
+<tr><td>温度策略</td><td>预检/提炼 temperature=0.3，闪卡/题目 temperature=0.7</td><td>稳定性 vs 多样性的平衡</td></tr>
+<tr><td>Token 预算</td><td>每个 Prompt 标注预估 input/output tokens</td><td>避免超限，控制成本</td></tr>
+<tr><td>Fallback</td><td>每个 LLM 调用有降级方案</td><td>GPT-4o → GPT-4o-mini → Claude Haiku</td></tr>
+</table>
+
+<h2>5.4 AI 代码审查 Checklist</h2>
+
+<table>
+<tr><th>检查类别</th><th>检查项</th><th>重要性</th></tr>
+<tr><td rowspan="3">安全性</td><td>SQL 是否通过 Prisma 参数化，无拼接</td><td><span class="badge badge-p0">P0</span></td></tr>
+<tr><td>文件上传是否校验 MIME 类型和大小</td><td><span class="badge badge-p0">P0</span></td></tr>
+<tr><td>API 是否有认证中间件保护</td><td><span class="badge badge-p0">P0</span></td></tr>
+<tr><td rowspan="3">类型安全</td><td>无 <code>any</code>，无 <code>as unknown as</code></td><td><span class="badge badge-p1">P1</span></td></tr>
+<tr><td>API 返回类型与 packages/types 定义一致</td><td><span class="badge badge-p1">P1</span></td></tr>
+<tr><td>Zod schema 与 TypeScript 类型同步</td><td><span class="badge badge-p1">P1</span></td></tr>
+<tr><td rowspan="2">错误处理</td><td>LLM 调用有 try/catch + 重试逻辑</td><td><span class="badge badge-p1">P1</span></td></tr>
+<tr><td>用户友好的错误信息（不暴露堆栈）</td><td><span class="badge badge-p1">P1</span></td></tr>
+<tr><td rowspan="2">业务逻辑</td><td>当日完成判定：学+练都完成才触发</td><td><span class="badge badge-p1">P1</span></td></tr>
+<tr><td>推荐矩阵规则与 PRD 9.2 节一致</td><td><span class="badge badge-p1">P1</span></td></tr>
+</table>
+
+<!-- ============ Chapter 6 ============ -->
+<h1 id="ch6">六、人员分配手册</h1>
+
+<h2>6.1 团队角色架构图</h2>
+
+<div class="mermaid">
+flowchart TB
+    subgraph TEAM["四人开发团队"]
+        A["👤 成员 A\n技术负责人 + 架构师"]
+        B["👤 成员 B\n前端工程师"]
+        C["👤 成员 C\nAI 工程师"]
+        D["👤 成员 D\n后端工程师"]
+    end
+
+    subgraph MA["成员 A 负责域"]
+        MA1["架构设计 + 技术选型"]
+        MA2["数据库 Schema 设计"]
+        MA3["CI/CD + DevOps"]
+        MA4["认证模块 (F1)"]
+        MA5["全团队 PR Review"]
+    end
+
+    subgraph MB["成员 B 负责域"]
+        MB1["所有 Next.js 页面与路由"]
+        MB2["UI 组件库 (shadcn/ui 定制)"]
+        MB3["Zustand Store + TanStack Query"]
+        MB4["移动端响应式适配"]
+        MB5["前端埋点 (Analytics)"]
+    end
+
+    subgraph MC["成员 C 负责域"]
+        MC1["PDF/Word 文件解析"]
+        MC2["OpenAI SDK 集成封装"]
+        MC3["Prompt 工程 + 版本管理"]
+        MC4["AI Worker 异步任务"]
+        MC5["AI 预检 + 知识点提炼 (F3)"]
+        MC6["闪卡/题目生成 (F5-F7)"]
+    end
+
+    subgraph MD["成员 D 负责域"]
+        MD1["所有业务 REST API"]
+        MD2["学练考纠四模块逻辑 (F5-F8)"]
+        MD3["规则推荐引擎 (F10)"]
+        MD4["进度追踪 + 掌握度计算 (F9)"]
+        MD5["BullMQ 任务队列配置"]
+    end
+
+    A --> MA1
+    A --> MA2
+    A --> MA3
+    A --> MA4
+    A --> MA5
+    B --> MB1
+    B --> MB2
+    B --> MB3
+    B --> MB4
+    B --> MB5
+    C --> MC1
+    C --> MC2
+    C --> MC3
+    C --> MC4
+    C --> MC5
+    C --> MC6
+    D --> MD1
+    D --> MD2
+    D --> MD3
+    D --> MD4
+    D --> MD5
+
+    style A fill:#fff1f0,stroke:#cf1322
+    style B fill:#e6f4ff,stroke:#1a6ee0
+    style C fill:#f9f0ff,stroke:#722ed1
+    style D fill:#f6ffed,stroke:#52c41a
+</div>
+
+<h2>6.2 模块分工矩阵</h2>
+
+<table>
+<tr><th>功能模块</th><th>PRD 编号</th><th>成员 A<br>技术负责人</th><th>成员 B<br>前端</th><th>成员 C<br>AI 工程师</th><th>成员 D<br>后端</th></tr>
+<tr><td>账号 / 认证系统</td><td>F1</td><td>🔵 主导</td><td>🟡 协作（登录页面）</td><td>—</td><td>🟡 协作（JWT 中间件）</td></tr>
+<tr><td>文件上传</td><td>F2.1</td><td>🟡 Review</td><td>🔵 主导（上传 UI）</td><td>🔵 主导（解析逻辑）</td><td>🟡 协作（存储 API）</td></tr>
+<tr><td>学习目标填写</td><td>F2.2</td><td>—</td><td>🔵 主导（表单 UI）</td><td>—</td><td>🟡 协作（保存 API）</td></tr>
+<tr><td>推荐资料入口</td><td>F2.3</td><td>—</td><td>🔵 主导（UI）</td><td>🟡 协作（预制数据）</td><td>🟡 协作（API）</td></tr>
+<tr><td>AI 预检</td><td>F3.1</td><td>🟡 Review</td><td>🟡 协作（状态 UI）</td><td>🔵 主导</td><td>🟡 协作（触发 API）</td></tr>
+<tr><td>知识点提炼</td><td>F3.2</td><td>🟡 Review</td><td>—</td><td>🔵 主导</td><td>🟡 协作（存储）</td></tr>
+<tr><td>学习计划生成</td><td>F4</td><td>🟡 Review</td><td>🟡 协作（计划确认页）</td><td>🔵 主导（LLM 逻辑）</td><td>🔵 主导（规则引擎）</td></tr>
+<tr><td>学·闪卡浏览</td><td>F5</td><td>—</td><td>🔵 主导（翻卡 UI）</td><td>🔵 主导（生成 AI）</td><td>🔵 主导（数据 API）</td></tr>
+<tr><td>练·每日小测</td><td>F6</td><td>—</td><td>🔵 主导（答题 UI）</td><td>🔵 主导（出题 AI）</td><td>🔵 主导（判分 API）</td></tr>
+<tr><td>考·阶段测验</td><td>F7</td><td>—</td><td>🟡 协作（复用 UI）</td><td>🟡 协作（出题 AI）</td><td>🔵 主导（逻辑 API）</td></tr>
+<tr><td>纠·错题本</td><td>F8</td><td>—</td><td>🔵 主导（错题 UI）</td><td>—</td><td>🔵 主导（归类 API）</td></tr>
+<tr><td>进度页</td><td>F9</td><td>—</td><td>🔵 主导（数据可视化）</td><td>—</td><td>🔵 主导（统计 API）</td></tr>
+<tr><td>智能下一步推荐</td><td>F10</td><td>🟡 Review</td><td>🟡 协作（推荐 UI）</td><td>—</td><td>🔵 主导（规则引擎）</td></tr>
+<tr><td>Sentry 监控 + 埋点</td><td>—</td><td>🔵 主导</td><td>🟡 协作（前端埋点）</td><td>—</td><td>🟡 协作（后端日志）</td></tr>
+</table>
+
+<p style="font-size:13px;color:#86909c;">🔵 主导 = 独立负责该方向代码 &nbsp;|&nbsp; 🟡 协作 = 提供支持/参与联调 &nbsp;|&nbsp; — = 不参与</p>
+
+<h2>6.3 团队每日协作时序</h2>
+
+<div class="mermaid">
+sequenceDiagram
+    participant A as 技术负责人 A
+    participant B as 前端工程师 B
+    participant C as AI 工程师 C
+    participant D as 后端工程师 D
+
+    Note over A,D: 每日 09:30 站会（15 分钟）
+    A->>B: 今日前端任务 + 接口联调计划
+    A->>C: 今日 AI Pipeline 任务
+    A->>D: 今日后端 API 任务
+
+    par 并行开发（10:00-18:00）
+        B->>B: UI 组件开发\nv0.dev / Cursor
+    and
+        C->>C: AI Pipeline\nPrompt + Worker
+    and
+        D->>D: REST API\nHono + Prisma
+    end
+
+    Note over B,D: 下午 14:00 接口联调（30 分钟）
+    D->>B: 提供 API 文档 + Mock 数据
+    B->>D: 确认接口格式 + 前端字段需求
+
+    Note over C,D: 下午 16:00 AI 服务对接
+    C->>D: Worker 产出结果格式确认
+    D->>C: 数据库存储结构对齐
+
+    Note over A,D: 每日 18:30 PR Review
+    B->>A: 提交前端 PR，附截图
+    D->>A: 提交后端 PR
+    C->>A: 提交 AI 模块 PR
+    A->>B: Code Review 反馈
+    A->>D: Code Review 反馈
+    A->>C: Code Review 反馈
+</div>
+
+<h2>6.4 沟通与同步规范</h2>
+
+<table>
+<tr><th>会议/同步</th><th>频次</th><th>时长</th><th>目的</th><th>主持人</th></tr>
+<tr><td>每日站会</td><td>每天</td><td>15 分钟</td><td>同步进度，暴露阻塞</td><td>成员 A</td></tr>
+<tr><td>接口联调</td><td>每天</td><td>30 分钟</td><td>前后端接口对齐</td><td>成员 B + D</td></tr>
+<tr><td>Sprint 回顾</td><td>每周五</td><td>1 小时</td><td>Sprint 总结 + 下周计划</td><td>成员 A</td></tr>
+<tr><td>技术设计评审</td><td>按需</td><td>1 小时</td><td>复杂功能方案确认</td><td>成员 A</td></tr>
+</table>
+
+<!-- ============ Chapter 7 ============ -->
+<h1 id="ch7">七、开发阶段排期</h1>
+
+<h2>7.1 Sprint 规划总览</h2>
+
+<div class="mermaid">
+gantt
+    title StudyHere MVP 开发排期（商业级）
+    dateFormat  YYYY-MM-DD
+    section Sprint 0 · 基础设施
+    Monorepo + CI/CD + 环境     :s0a, 2026-05-22, 2d
+    数据库 Schema + Prisma 初始化 :s0b, 2026-05-22, 2d
+    Next.js + Hono 脚手架搭建    :s0c, 2026-05-22, 2d
+
+    section Sprint 1 · 认证与上传
+    认证模块 F1                  :s1a, 2026-05-24, 5d
+    文件上传 + AI 预检 F2+F3.1   :s1b, 2026-05-24, 5d
+    知识点提炼 F3.2              :s1c, 2026-05-26, 5d
+
+    section Sprint 2 · 计划与学习
+    学习计划生成 F4              :s2a, 2026-05-29, 5d
+    闪卡学习模块 F5              :s2b, 2026-05-29, 5d
+    每日小测模块 F6              :s2c, 2026-06-01, 5d
+
+    section Sprint 3 · 考纠闭环
+    阶段测验模块 F7              :s3a, 2026-06-05, 5d
+    错题本模块 F8                :s3b, 2026-06-05, 5d
+    智能推荐引擎 F10             :s3c, 2026-06-08, 4d
+
+    section Sprint 4 · 集成打磨
+    进度页 F9 + 数据可视化       :s4a, 2026-06-12, 4d
+    移动端适配 + 性能优化        :s4b, 2026-06-12, 4d
+    端到端测试 + Bug 修复        :s4c, 2026-06-15, 3d
+    生产环境部署 + 上线          :s4d, 2026-06-18, 2d
+</div>
+
+<h2>7.2 Sprint 里程碑与交付物</h2>
+
+<table>
+<tr><th>Sprint</th><th>周期</th><th>关键交付物</th><th>验收标准</th></tr>
+<tr><td><span class="badge badge-p0">Sprint 0</span></td><td>2 天</td><td>Monorepo 可运行，CI/CD 绿灯，数据库初始化</td><td>团队成员可 <code>pnpm dev</code> 启动所有服务</td></tr>
+<tr><td><span class="badge badge-p1">Sprint 1</span></td><td>7 天</td><td>用户可注册登录，上传文件，AI 完成预检和知识点提炼</td><td>5 份推荐资料全部完成提炼 + 预检通过率 100%</td></tr>
+<tr><td><span class="badge badge-p1">Sprint 2</span></td><td>8 天</td><td>用户可生成学习计划，完成闪卡学习和每日小测</td><td>完整走通首次使用流程，闪卡/题目质量人工评估通过</td></tr>
+<tr><td><span class="badge badge-p1">Sprint 3</span></td><td>8 天</td><td>阶段测验、错题本、智能推荐全部可用</td><td>全闭环流程（学→练→考→纠→推荐）可完整跑通</td></tr>
+<tr><td><span class="badge badge-p2">Sprint 4</span></td><td>8 天</td><td>进度页、移动端、E2E 测试、生产部署</td><td>Lighthouse 移动端 &gt;70分，核心流程无 P0 Bug</td></tr>
+</table>
+
+<h2>7.3 并行开发协作流程图</h2>
+
+<div class="mermaid">
+flowchart LR
+    subgraph SPRINT1["Sprint 1 并行任务（7天）"]
+        A1["A: 认证 API\nJWT + SMS"]
+        B1["B: 登录页 + 首页 UI"]
+        C1["C: PDF 解析\n+ AI 预检 Worker"]
+        D1["D: 宝库 CRUD API\n文件上传接口"]
+    end
+
+    subgraph SPRINT2["Sprint 2 并行任务（8天）"]
+        A2["A: PR Review\n+ 架构优化"]
+        B2["B: 闪卡 UI\n + 小测 UI"]
+        C2["C: 闪卡/题目\n生成 Prompt"]
+        D2["D: 计划生成 API\n学习记录 API"]
+    end
+
+    subgraph MILESTONE["阶段验收"]
+        M1["Sprint 1 验收\n注册→上传→提炼"]
+        M2["Sprint 2 验收\n学习计划→学→练"]
+    end
+
+    SPRINT1 --> M1
+    M1 --> SPRINT2
+    SPRINT2 --> M2
+
+    style M1 fill:#f6ffed,stroke:#52c41a
+    style M2 fill:#f6ffed,stroke:#52c41a
+</div>
+
+<!-- ============ Chapter 8 ============ -->
+<h1 id="ch8">八、AI Pipeline 技术规范</h1>
+
+<h2>8.1 AI 数据处理完整流水线</h2>
+
+<div class="mermaid">
+flowchart TD
+    Upload["用户上传 PDF/Word\nSupabase Storage"] --> Parse["文件解析\npdf-parse / mammoth.js\n提取纯文本"]
+    Parse --> Chunk["文本分块\n按标题/章节切割\n每块 ≤ 2000 tokens"]
+    Chunk --> Precheck["AI 预检 Job\nGPT-4o-mini\n判断：学习资料? 目标匹配?"]
+    Precheck --> CheckPass{预检通过?}
+    CheckPass -->|"❌ 不通过"| Reject["返回友好提示\n引导推荐资料"]
+    CheckPass -->|"✅ 通过"| Extract["知识点提炼 Job\nGPT-4o + Few-shot\n返回结构化 JSON"]
+    Extract --> Evaluate["LLM 评估知识点\n难度 1-5 + 时长 + 依赖"]
+    Evaluate --> PlanRule["规则引擎生成计划\n背包算法分配\n拓扑排序依赖"]
+    PlanRule --> SavePlan["保存计划到 DB\n通知前端就绪"]
+    SavePlan --> Prefetch["预生成当日内容\n异步：闪卡 + 题目"]
+    Prefetch --> FlashGen["闪卡生成 Job\nGPT-4o-mini\n问+答+解析"]
+    Prefetch --> QuizGen["题目生成 Job\nGPT-4o-mini\n4选1+干扰项+解析"]
+    FlashGen --> Cache["写入 Redis 缓存\n10分钟 TTL"]
+    QuizGen --> Cache
+
+    style Upload fill:#fff7e6,stroke:#fa8c16
+    style Precheck fill:#f9f0ff,stroke:#722ed1
+    style Extract fill:#f9f0ff,stroke:#722ed1
+    style PlanRule fill:#f6ffed,stroke:#52c41a
+    style Reject fill:#fff1f0,stroke:#cf1322
+</div>
+
+<h2>8.2 AI 任务队列设计</h2>
+
+<table>
+<tr><th>队列名称</th><th>Job 类型</th><th>优先级</th><th>超时</th><th>重试次数</th></tr>
+<tr><td><code>ai-precheck</code></td><td>资料预检</td><td>高</td><td>30s</td><td>1 次</td></tr>
+<tr><td><code>ai-extract</code></td><td>知识点提炼</td><td>高</td><td>3 分钟</td><td>2 次</td></tr>
+<tr><td><code>ai-plan</code></td><td>计划生成</td><td>高</td><td>60s</td><td>2 次</td></tr>
+<tr><td><code>ai-generate</code></td><td>闪卡/题目生成</td><td>中</td><td>30s</td><td>2 次</td></tr>
+</table>
+
+<h2>8.3 AI 质量监控与降级策略</h2>
+
+<div class="mermaid">
+flowchart LR
+    Call["LLM API 调用"] --> Try1["首选模型\nGPT-4o / GPT-4o-mini"]
+    Try1 --> Result1{成功?}
+    Result1 -->|"✅"| OK["返回结果"]
+    Result1 -->|"❌ 超时/错误"| Retry["等待 1s 重试 1 次"]
+    Retry --> Result2{成功?}
+    Result2 -->|"✅"| OK
+    Result2 -->|"❌"| Fallback["降级模型\nClaude Haiku / DeepSeek"]
+    Fallback --> Result3{成功?}
+    Result3 -->|"✅"| OK
+    Result3 -->|"❌"| SampleFallback["降级到推荐资料\n用户友好提示"]
+
+    style OK fill:#f6ffed,stroke:#52c41a
+    style SampleFallback fill:#fff7e6,stroke:#fa8c16
+</div>
+
+<!-- ============ Chapter 9 ============ -->
+<h1 id="ch9">九、API 设计规范</h1>
+
+<h2>9.1 统一响应格式</h2>
+
+<pre><code>// 成功响应
+{
+  "success": true,
+  "data": { ... }
+}
+
+// 失败响应
+{
+  "success": false,
+  "error": {
+    "code": "VAULT_NOT_FOUND",     // 业务错误码
+    "message": "学习宝库不存在"     // 用户可见消息
+  }
+}
+
+// 分页响应
+{
+  "success": true,
+  "data": {
+    "items": [...],
+    "total": 100,
+    "page": 1,
+    "pageSize": 20
+  }
+}</code></pre>
+
+<h2>9.2 核心 API 端点设计</h2>
+
+<table>
+<tr><th>模块</th><th>方法</th><th>路径</th><th>说明</th><th>负责人</th></tr>
+<tr><td rowspan="2">认证</td><td>POST</td><td><code>/api/v1/auth/send-otp</code></td><td>发送短信验证码</td><td>A</td></tr>
+<tr><td>POST</td><td><code>/api/v1/auth/verify-otp</code></td><td>验证码登录/注册</td><td>A</td></tr>
+<tr><td rowspan="4">宝库</td><td>GET</td><td><code>/api/v1/vaults</code></td><td>获取我的宝库列表</td><td>D</td></tr>
+<tr><td>POST</td><td><code>/api/v1/vaults</code></td><td>创建宝库（含上传触发）</td><td>D</td></tr>
+<tr><td>GET</td><td><code>/api/v1/vaults/:id</code></td><td>获取宝库详情</td><td>D</td></tr>
+<tr><td>DELETE</td><td><code>/api/v1/vaults/:id</code></td><td>删除宝库</td><td>D</td></tr>
+<tr><td rowspan="2">AI 处理</td><td>GET</td><td><code>/api/v1/vaults/:id/status</code></td><td>轮询 AI 处理状态</td><td>C+D</td></tr>
+<tr><td>POST</td><td><code>/api/v1/vaults/:id/plan/confirm</code></td><td>确认学习计划</td><td>D</td></tr>
+<tr><td rowspan="2">学习</td><td>GET</td><td><code>/api/v1/vaults/:id/study/cards</code></td><td>获取今日闪卡</td><td>D</td></tr>
+<tr><td>POST</td><td><code>/api/v1/vaults/:id/study/complete</code></td><td>提交学习结果</td><td>D</td></tr>
+<tr><td rowspan="2">练习</td><td>GET</td><td><code>/api/v1/vaults/:id/practice/questions</code></td><td>获取今日练习题</td><td>D</td></tr>
+<tr><td>POST</td><td><code>/api/v1/vaults/:id/practice/submit</code></td><td>提交练习答案</td><td>D</td></tr>
+<tr><td rowspan="2">考试</td><td>POST</td><td><code>/api/v1/vaults/:id/exam/start</code></td><td>开始阶段测验</td><td>D</td></tr>
+<tr><td>POST</td><td><code>/api/v1/vaults/:id/exam/submit</code></td><td>提交测验答案</td><td>D</td></tr>
+<tr><td rowspan="2">错题</td><td>GET</td><td><code>/api/v1/vaults/:id/wrong</code></td><td>获取错题列表</td><td>D</td></tr>
+<tr><td>POST</td><td><code>/api/v1/vaults/:id/wrong/:questionId/answer</code></td><td>重做错题</td><td>D</td></tr>
+<tr><td>进度</td><td>GET</td><td><code>/api/v1/vaults/:id/progress</code></td><td>获取完整进度数据</td><td>D</td></tr>
+<tr><td>推荐资料</td><td>GET</td><td><code>/api/v1/samples</code></td><td>获取推荐资料列表</td><td>D</td></tr>
+</table>
+
+<h2>9.3 API 认证流程</h2>
+
+<div class="mermaid">
+sequenceDiagram
+    participant FE as 前端
+    participant API as Hono API
+    participant DB as PostgreSQL
+
+    FE->>API: POST /auth/send-otp { phone }
+    API->>API: 校验手机号格式
+    API->>API: 检查频率限制 (1h/5次)
+    API->>DB: 保存 OTP (hashed, 5分钟有效)
+    API->>FE: { success: true }
+
+    FE->>API: POST /auth/verify-otp { phone, code }
+    API->>DB: 查询 OTP 记录
+    API->>API: 校验 OTP 是否有效
+    API->>DB: 查询/创建用户
+    API->>API: 生成 JWT (30天有效)
+    API->>FE: { success: true, data: { token, user } }
+
+    Note over FE,API: 后续请求
+    FE->>API: GET /vaults (Authorization: Bearer token)
+    API->>API: JWT 中间件验证
+    API->>DB: 查询用户宝库
+    API->>FE: { success: true, data: [...] }
+</div>
+
+<!-- ============ Chapter 10 ============ -->
+<h1 id="ch10">十、数据模型设计</h1>
+
+<h2>10.1 核心数据模型关系图</h2>
+
+<div class="mermaid">
+flowchart TB
+    subgraph CORE["核心数据模型"]
+        User["User\n─────\nid: UUID\nphone: String\nnickname: String\ncreated_at: DateTime"]
+
+        Vault["Vault\n─────\nid: UUID\nuser_id: FK\nname: String\nstatus: Enum\ntarget_date: Date\ndaily_minutes: Int\nstudy_goal: Text"]
+
+        KnowledgePoint["KnowledgePoint\n─────\nid: UUID\nvault_id: FK\ntitle: String\ncontent: Text\ndifficulty: Int 1-5\nestimated_minutes: Int\norder: Int"]
+
+        StudyPlan["StudyPlan\n─────\nid: UUID\nvault_id: FK\ntotal_days: Int\ncurrent_day: Int\nconfirmed_at: DateTime"]
+
+        DayPlan["DayPlan\n─────\nid: UUID\nplan_id: FK\nday_number: Int\nkp_ids: JSON\nstatus: Enum"]
+    end
+
+    subgraph CONTENT["学习内容"]
+        Flashcard["Flashcard\n─────\nid: UUID\nkp_id: FK\nquestion: Text\nanswer: Text\ngenerated_at: DateTime"]
+
+        Question["Question\n─────\nid: UUID\nkp_id: FK\ntype: Enum\nquestion: Text\noptions: JSON\ncorrect_index: Int\nexplanation: Text"]
+    end
+
+    subgraph BEHAVIOR["用户行为"]
+        StudyRecord["StudyRecord\n─────\nid: UUID\nuser_id: FK\nday_plan_id: FK\nstudy_done: Bool\npractice_done: Bool\ndate: Date"]
+
+        AnswerRecord["AnswerRecord\n─────\nid: UUID\nuser_id: FK\nquestion_id: FK\nis_correct: Bool\nanswered_at: DateTime"]
+
+        WrongQuestion["WrongQuestion\n─────\nid: UUID\nuser_id: FK\nquestion_id: FK\nwrong_count: Int\ncleared_at: DateTime"]
+
+        Mastery["Mastery\n─────\nid: UUID\nuser_id: FK\nkp_id: FK\nscore: Float 0-1\nupdated_at: DateTime"]
+    end
+
+    User -->|"1:N"| Vault
+    Vault -->|"1:N"| KnowledgePoint
+    Vault -->|"1:1"| StudyPlan
+    StudyPlan -->|"1:N"| DayPlan
+    KnowledgePoint -->|"1:N"| Flashcard
+    KnowledgePoint -->|"1:N"| Question
+    DayPlan -->|"1:1"| StudyRecord
+    Question -->|"1:N"| AnswerRecord
+    Question -->|"0:1"| WrongQuestion
+    KnowledgePoint -->|"1:1 per user"| Mastery
+
+    style CORE fill:#e6f4ff,stroke:#1a6ee0
+    style CONTENT fill:#f9f0ff,stroke:#722ed1
+    style BEHAVIOR fill:#f6ffed,stroke:#52c41a
+</div>
+
+<h2>10.2 Vault Status 状态机</h2>
+
+<div class="mermaid">
+flowchart LR
+    UPLOADING["UPLOADING\n上传中"] -->|"上传完成"| PROCESSING["PROCESSING\nAI 处理中"]
+    PROCESSING -->|"预检不通过"| FAILED["FAILED\n处理失败"]
+    PROCESSING -->|"提炼完成\n等待确认"| PLAN_READY["PLAN_READY\n计划就绪"]
+    PLAN_READY -->|"用户确认计划"| ACTIVE["ACTIVE\n学习中"]
+    ACTIVE -->|"全部计划完成"| COMPLETED["COMPLETED\n已完成"]
+    FAILED -->|"重试/更换资料"| UPLOADING
+
+    style UPLOADING fill:#fff7e6,stroke:#fa8c16
+    style PROCESSING fill:#f9f0ff,stroke:#722ed1
+    style PLAN_READY fill:#e6f4ff,stroke:#1a6ee0
+    style ACTIVE fill:#f6ffed,stroke:#52c41a
+    style COMPLETED fill:#d4f4dd,stroke:#52c41a
+    style FAILED fill:#fff1f0,stroke:#cf1322
+</div>
+
+<h2>10.3 非功能性要求核查清单</h2>
+
+<table>
+<tr><th>类别</th><th>要求</th><th>实现方案</th><th>验收指标</th></tr>
+<tr><td>性能</td><td>页面首屏加载</td><td>Next.js SSR + 图片优化</td><td>&lt; 2s (LCP)</td></tr>
+<tr><td>性能</td><td>API 响应（非 AI）</td><td>Redis 缓存 + DB 索引</td><td>&lt; 500ms P95</td></tr>
+<tr><td>性能</td><td>AI 处理时间</td><td>BullMQ 异步 + 进度轮询</td><td>&lt; 3 分钟（30页）</td></tr>
+<tr><td>可用性</td><td>服务可用性</td><td>Railway 自动重启 + 健康检查</td><td>&gt; 99% 月可用</td></tr>
+<tr><td>安全</td><td>认证鉴权</td><td>JWT + Hono 中间件</td><td>所有 /api/* 受保护</td></tr>
+<tr><td>安全</td><td>文件安全</td><td>MIME 校验 + Supabase RLS</td><td>仅用户本人可访问</td></tr>
+<tr><td>安全</td><td>数据隐私</td><td>资料加密存储，不用于训练</td><td>PIPL 合规</td></tr>
+<tr><td>监控</td><td>错误追踪</td><td>Sentry 前后端集成</td><td>P0 错误 5 分钟告警</td></tr>
+<tr><td>兼容性</td><td>移动端适配</td><td>Tailwind 响应式 + Safari 测试</td><td>微信/Safari/Chrome 通过</td></tr>
+</table>
+
+<hr>
+
+<p style="text-align: center; color: #86909c; font-size: 13px; margin-top: 40px;">
+  StudyHere · 商业级前后端开发手册 v1.0<br>
+  基于 PRD v2.0 生成 · 2026-05-22<br>
+  4人 AI Coding 团队 · GitHub 协作 · 面向 AI 构建
+</p>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    flowchart: { curve: 'basis', padding: 20, useMaxWidth: true, htmlLabels: true },
+    sequence: { showSequenceNumbers: false },
+    gantt: { fontSize: 13, sectionFontSize: 14 },
+    securityLevel: 'loose'
+  });
+</script>
+</body>
+</html>

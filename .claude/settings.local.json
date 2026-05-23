@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(pnpm --version)",
+      "Bash(git --version)",
+      "Bash(npm install *)",
+      "Bash(git init *)",
+      "Bash(export PRISMA_ENGINES_MIRROR=https://registry.npmmirror.com/-/binary/prisma)",
+      "Bash(pnpm install *)",
+      "Bash(cp ../../.env.example .env)",
+      "Bash(timeout 5 pnpm dev)",
+      "Bash(pnpm dev *)",
+      "Bash(curl -s http://localhost:3001/health)",
+      "Bash(kill %1)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat: 初始化 StudyHere 项目骨架 *)"
+    ]
+  }
+}

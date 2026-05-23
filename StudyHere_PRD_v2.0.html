@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>StudyHere 产品需求文档 v2.0</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 36px 100px;
+    color: #1f2329;
+    line-height: 1.75;
+    background: #fafbfc;
+  }
+  .doc-header {
+    text-align: center;
+    padding: 40px 0 28px;
+    border-bottom: 4px solid #1a6ee0;
+    margin-bottom: 48px;
+  }
+  .doc-header h1 {
+    font-size: 36px;
+    margin: 0 0 12px;
+    color: #1f2329;
+    letter-spacing: -0.5px;
+  }
+  .doc-header .subtitle {
+    font-size: 17px;
+    color: #4e5969;
+    margin: 0;
+  }
+  .doc-meta {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+    font-size: 13px;
+    color: #86909c;
+    flex-wrap: wrap;
+  }
+  .doc-meta span { padding: 4px 12px; background: #fff; border-radius: 16px; border: 1px solid #e5e6eb; }
+
+  h1 {
+    font-size: 30px;
+    border-bottom: 2px solid #e5e6eb;
+    padding-bottom: 14px;
+    margin-top: 56px;
+    color: #1f2329;
+  }
+  h2 {
+    font-size: 24px;
+    margin-top: 36px;
+    padding: 10px 16px;
+    border-left: 5px solid #1a6ee0;
+    background: linear-gradient(90deg, #f0f5ff 0%, transparent 100%);
+    color: #1f2329;
+  }
+  h3 {
+    font-size: 19px;
+    margin-top: 32px;
+    color: #2c3140;
+    border-bottom: 1px dashed #e5e6eb;
+    padding-bottom: 6px;
+  }
+  h4 {
+    font-size: 16px;
+    margin-top: 24px;
+    color: #4e5969;
+  }
+  .mermaid {
+    background: #fff;
+    border: 1px solid #e5e6eb;
+    border-radius: 8px;
+    padding: 28px 20px;
+    margin: 24px 0;
+    overflow-x: auto;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid #e5e6eb;
+    padding: 11px 14px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #f2f3f5;
+    font-weight: 600;
+    color: #2c3140;
+  }
+  tr:nth-child(even) td { background: #fafbfc; }
+  code {
+    background: #f2f3f5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: "SF Mono", Consolas, Monaco, monospace;
+    font-size: 13px;
+    color: #d4380d;
+  }
+  pre {
+    background: #1d2129;
+    color: #e8e8e8;
+    padding: 18px 22px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 18px 0;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; }
+  ul, ol { padding-left: 28px; }
+  li { margin: 6px 0; }
+  blockquote {
+    border-left: 4px solid #1a6ee0;
+    padding: 14px 20px;
+    margin: 18px 0;
+    background: #f0f5ff;
+    color: #2c3140;
+    border-radius: 0 6px 6px 0;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #e8f3ff;
+    color: #1a6ee0;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-right: 6px;
+    font-weight: 500;
+  }
+  .tag-red { background: #fff1f0; color: #cf1322; }
+  .tag-green { background: #f6ffed; color: #389e0d; }
+  .tag-orange { background: #fff7e6; color: #d46b08; }
+  .tag-purple { background: #f9f0ff; color: #722ed1; }
+  .tag-gray { background: #f5f5f5; color: #595959; }
+
+  .priority-p0 { background: #fff1f0; color: #cf1322; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block; }
+  .priority-p1 { background: #fff7e6; color: #d46b08; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block; }
+  .priority-p2 { background: #e6f4ff; color: #1a6ee0; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block; }
+  .priority-p3 { background: #f5f5f5; color: #595959; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block; }
+
+  .toc {
+    background: #fff;
+    border: 1px solid #e5e6eb;
+    border-radius: 8px;
+    padding: 28px;
+    margin: 28px 0;
+  }
+  .toc h3 { margin-top: 0; border: none; padding: 0; font-size: 18px; }
+  .toc ol { list-style: none; padding-left: 0; column-count: 2; column-gap: 36px; }
+  .toc ol li { padding: 6px 0; font-size: 14px; }
+  .toc ol li a { color: #1a6ee0; text-decoration: none; }
+  .toc ol li a:hover { text-decoration: underline; }
+
+  .check { color: #52c41a; font-weight: bold; }
+  .cross { color: #f5222d; font-weight: bold; }
+
+  .footnote {
+    color: #86909c;
+    font-size: 13px;
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  .field-table th { width: 22%; background: #fafbfc; }
+
+  .ascii-diagram {
+    background: #1d2129;
+    color: #e8e8e8;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: "SF Mono", Consolas, Monaco, monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: pre;
+    margin: 18px 0;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e5e6eb;
+    margin: 40px 0;
+  }
+
+  .field-meta {
+    display: inline-block;
+    padding: 1px 6px;
+    background: #f2f3f5;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #4e5969;
+    margin: 0 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <h1>StudyHere · 产品需求文档</h1>
+  <p class="subtitle">帮你掌握任何知识和技能的 AI 学习闭环平台 · MVP v1.0</p>
+  <div class="doc-meta">
+    <span>版本 v2.0</span>
+    <span>StudyHere 项目组</span>
+    <span>创建日期 2026-05-20</span>
+    <span>修订日期 2026-05-21</span>
+    <span>目标上线 2026-05-24</span>
+    <span>状态 评审中</span>
+  </div>
+</div>
+
+<div class="toc">
+  <h3>文档导航</h3>
+  <ol>
+    <li><a href="#ch1">一、文档信息与背景</a></li>
+    <li><a href="#ch2">二、需求来源与机会洞察</a></li>
+    <li><a href="#ch3">三、市场与竞品分析</a></li>
+    <li><a href="#ch4">四、用户研究</a></li>
+    <li><a href="#ch5">五、产品定位与策略</a></li>
+    <li><a href="#ch6">六、产品愿景与 MVP 范围</a></li>
+    <li><a href="#ch7">七、产品架构</a></li>
+    <li><a href="#ch8">八、信息架构</a></li>
+    <li><a href="#ch9">九、核心流程</a></li>
+    <li><a href="#ch10">十、功能详细需求</a></li>
+    <li><a href="#ch11">十一、AI 能力设计</a></li>
+    <li><a href="#ch12">十二、输入兜底机制</a></li>
+    <li><a href="#ch13">十三、数据指标与假设验证</a></li>
+    <li><a href="#ch14">十四、非功能性需求</a></li>
+    <li><a href="#ch15">十五、风险与依赖</a></li>
+    <li><a href="#ch16">十六、Roadmap 与演进路径</a></li>
+  </ol>
+</div>
+
+<!-- ============ 第一章 ============ -->
+<h1 id="ch1">一、文档信息与背景</h1>
+
+<h2>1.1 文档信息</h2>
+
+<table>
+<tr><th>项目</th><th>内容</th></tr>
+<tr><td>产品名称</td><td><strong>StudyHere</strong></td></tr>
+<tr><td>一句话定位</td><td>帮你掌握任何知识和技能的 AI 学习闭环平台</td></tr>
+<tr><td>当前版本</td><td>v1.0(MVP)</td></tr>
+<tr><td>文档作者</td><td>StudyHere 项目组</td></tr>
+<tr><td>目标上线</td><td>2026-05-24(周日)</td></tr>
+<tr><td>文档面向</td><td>项目发起人 / 产品负责人 / 研发-算法-设计-运营成员 / 业务评审</td></tr>
+<tr><td>本文档覆盖</td><td>StudyHere 业务定位、目标用户、问题诊断、竞品对标、MVP 范围、产品架构、信息架构、核心流程、功能详细需求、AI 能力设计、输入兜底、数据指标、风险与待确认问题</td></tr>
+<tr><td>本文档不覆盖</td><td>详细 UI 设计稿、数据库 DDL、Prompt 工程细节、算法评测实验报告、财务预算、法务合同、面试 Q&A 与团队内部资料(详见配套《StudyHere 关键信息说明文档》)</td></tr>
+</table>
+
+<h2>1.2 修订记录</h2>
+
+<table>
+<tr><th>版本</th><th>日期</th><th>修订内容</th></tr>
+<tr><td>v0.1</td><td>2026-05-18</td><td>初稿,基于第一版用户群定位</td></tr>
+<tr><td>v0.5</td><td>2026-05-19</td><td>用户群调整为 22-35 岁通用学习者</td></tr>
+<tr><td>v1.0</td><td>2026-05-20</td><td>整合竞品报告,确定 MVP 范围</td></tr>
+<tr><td>v2.0</td><td>2026-05-21</td><td>全文重写:第一视角、专业用词、补充信息源、调整架构图、补全错题闭环</td></tr>
+</table>
+
+<h2>1.3 业务背景</h2>
+
+<p>AI 大模型能力的成熟让"个性化学习路径"从概念走入产品。NotebookLM(2024)、Quizlet AI 等产品验证了"AI 处理学习资料 + 智能化输出"形态的市场可行性,资本市场对 AI+教育赛道持续看好。</p>
+
+<p>同时,我们的目标用户群——22-35 岁有明确学习目标的职场人与学生——长期处于"学习焦虑"中:</p>
+
+<ul>
+  <li>信息爆炸,碎片化阅读无法形成知识体系</li>
+  <li>ChatGPT 等通用工具能问能答,但缺乏学习追踪和闭环</li>
+  <li>Anki、Quizlet 等工具需要手工制作,门槛高</li>
+  <li>培训机构课程标准化,无法个性化</li>
+</ul>
+
+<p>StudyHere 切入这一市场空白:让用户上传任意资料,AI 帮其拆解、规划、闭环、追踪学习过程。</p>
+
+<!-- ============ 第二章 ============ -->
+<h1 id="ch2">二、需求来源与机会洞察</h1>
+
+<h2>2.1 机会识别方法论</h2>
+
+<p>做 0-1 产品最大的风险是"以为是痛点,其实只是偏好"。我们的做法是<strong>双向验证</strong>:</p>
+
+<p><strong>自上而下</strong>:我们通过多渠道——Product Hunt、a16z 趋势报告、Y Combinator 近期批次、Sensor Tower 流水数据——持续追踪全球 AI 应用增长信号,寻找有 PMF 信号的赛道。</p>
+
+<p><strong>自下而上</strong>:结合团队成员的真实学习痛点——团队中有人正在备考 PMP、有 2 人有考研经历、多人长期处于"读书消化难"的状态——进行本地验证。</p>
+
+<p>当两个方向交汇——全球 AI 学习工具(NotebookLM、Quizlet AI 等)显著增长 + 我们自己的高频痛点——我们就有了 StudyHere 的起点。这个方法论让我们既不"闭门造车",也不"盲目跟风"。</p>
+
+<blockquote>
+《StudyHere 关键信息说明文档》§1 提供了本判断方法的完整推导与备用叙事版本。
+</blockquote>
+
+<h2>2.2 全球信号:AI 学习工具赛道</h2>
+
+<p>我们追踪了竞品分析报告中的核心赛道选手,以及补充观察的若干代表性产品:</p>
+
+<table>
+<tr><th>产品</th><th>关键信号</th><th>说明</th></tr>
+<tr><td>NotebookLM(Google)</td><td>2024 年上线后用户增长显著,被《时代周刊》《纽约时报》多次报道</td><td>"上传资料 → AI 处理"形态被验证可行</td></tr>
+<tr><td>Quizlet AI</td><td>2023 年推出 Q-Chat 后付费转化提升</td><td>AI + 学习闭环具备商业化能力</td></tr>
+<tr><td>Heuristica</td><td>2024 年获 Y Combinator 投资,概念图差异化路径成立</td><td>"AI + 认知科学"路径有市场</td></tr>
+<tr><td>北森 AI 陪练</td><td>国内 B 端教培市场代表产品,完整跑通"训练 → 评分 → 报告"闭环</td><td>评估闭环的能力可被产品化</td></tr>
+</table>
+
+<blockquote>
+以上市场数据待团队周四开工前从权威数据源补全准确数值。《StudyHere 关键信息说明文档》§2 提供数据补全清单与建议数据源。
+</blockquote>
+
+<h2>2.3 本地洞察</h2>
+
+<p>团队成员的真实学习经历构成了本地验证:</p>
+
+<ul>
+  <li><strong>团队 PMP 备考成员</strong>:80 小时培训课看不完、做错题不知道哪个领域薄弱、没有个性化学习路径</li>
+  <li><strong>团队 2 名考研经历成员</strong>:专业课资料散乱、不知道当下应该看哪一章、记忆碎片化</li>
+  <li><strong>团队读书消化经历</strong>:读完书没沉淀、知识没法系统化、用的时候找不到</li>
+</ul>
+
+<h2>2.4 为什么选择 AI 学习赛道</h2>
+
+<p>基于全球信号与本地洞察的交汇,我们对赛道选择做出以下判断:</p>
+
+<table>
+<tr><th>判断维度</th><th>结论</th><th>支撑</th></tr>
+<tr><td>LLM 能力匹配度</td><td>极高</td><td>文本理解、内容生成、知识结构化——LLM 最强的三个能力都在此赛道</td></tr>
+<tr><td>用户付费验证</td><td>已有先例</td><td>Quizlet、Duolingo 已验证学习类订阅模式</td></tr>
+<tr><td>市场空白</td><td>存在</td><td>暂无产品做到"通用资料 + 完整学练考纠 + 评估闭环"组合(详见竞品报告)</td></tr>
+<tr><td>团队能力</td><td>匹配</td><td>5 人小队 4 天 MVP,LLM API 调用是最现实的技术选型</td></tr>
+</table>
+
+<blockquote>
+本节核心判断的完整支撑材料、数据来源、推导逻辑详见《StudyHere 关键信息说明文档》§3。
+</blockquote>
+
+<!-- ============ 第三章 ============ -->
+<h1 id="ch3">三、市场与竞品分析</h1>
+
+<h2>3.1 市场规模</h2>
+
+<p>我们梳理了 StudyHere 所处的中国在线教育与 AI 学习工具市场的关键指标。各项数据待团队完成权威数据源核验后补全:</p>
+
+<table>
+<tr><th>指标</th><th>数据</th><th>数据源</th><th>状态</th></tr>
+<tr><td>中国在线教育市场规模(2024)</td><td>待补</td><td>艾瑞咨询《中国在线教育行业报告》</td><td>待核验</td></tr>
+<tr><td>AI 教育细分赛道融资额(2024)</td><td>待补</td><td>36 氪 / IT 桔子《教育科技投融资报告》</td><td>待核验</td></tr>
+<tr><td>22-35 岁职场学习者规模</td><td>待补</td><td>QuestMobile《职场学习行为报告》</td><td>待核验</td></tr>
+<tr><td>在线学习工具月活用户</td><td>待补</td><td>QuestMobile</td><td>待核验</td></tr>
+<tr><td>NotebookLM 全球月活</td><td>待补</td><td>Similarweb 公开数据</td><td>待核验</td></tr>
+</table>
+
+<blockquote>
+关于"指标维度的完整性"以及"为什么需要这些维度而不是其他",详见《StudyHere 关键信息说明文档》§2。
+</blockquote>
+
+<h2>3.2 竞品分层</h2>
+
+<p>本节基于团队已完成的《竞品分析汇总报告 MVP 1.0》,我们选取了 4 款最具参考价值的产品做横向对比。竞品分层逻辑遵循团队的"三层对齐"原则:</p>
+
+<ul>
+  <li><strong>对齐维度一</strong>:基于产品核心定位——AI 职业能力 / 学习能力进阶</li>
+  <li><strong>对齐维度二</strong>:基于产品核心能力——资料导入、目标建模、学习/评估闭环</li>
+  <li><strong>对齐维度三</strong>:基于用户场景与产品形态——22-35 岁有学习目标的用户</li>
+</ul>
+
+<table>
+<tr><th>类别</th><th>产品</th><th>选择理由</th></tr>
+<tr><td><span class="tag">直接竞品</span></td><td>Heuristica</td><td>"学习与研究平台",对标我们的"基于资料的学习"能力,概念图差异化锚点</td></tr>
+<tr><td><span class="tag">直接竞品</span></td><td>北森 AI 陪练</td><td>市面上唯一完整跑通"训练 → 评分 → 报告"评估闭环的产品</td></tr>
+<tr><td><span class="tag tag-green">间接竞品</span></td><td>Quizlet</td><td>"翻卡 + 一对一 AI 导师",对标我们的"学练"能力</td></tr>
+<tr><td><span class="tag tag-green">间接竞品</span></td><td>NotebookLM</td><td>"一站式 AI 助手",对标我们的"多模态资料处理"能力</td></tr>
+</table>
+
+<h2>3.3 核心能力对比</h2>
+
+<table>
+<tr>
+<th>能力维度</th>
+<th>Heuristica</th>
+<th>北森</th>
+<th>Quizlet</th>
+<th>NotebookLM</th>
+<th>StudyHere</th>
+</tr>
+<tr>
+<td>22-35 岁通用学习者匹配</td>
+<td>✅</td>
+<td>✅(B 端)</td>
+<td>⚠️ 偏学生</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>目标定义</td>
+<td>❌</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>资料上传 + 学习计划</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>AI 角色互动</td>
+<td>极强(概念图)</td>
+<td>✅(剧本+角色)</td>
+<td>✅</td>
+<td>⚠️ 无角色</td>
+<td>✅(MVP 简版)</td>
+</tr>
+<tr>
+<td>学练考纠基础闭环</td>
+<td>❌</td>
+<td>❌</td>
+<td>⚠️(仅练)</td>
+<td>❌</td>
+<td>✅<strong>(核心差异)</strong></td>
+</tr>
+<tr>
+<td>单元 / 阶段评估</td>
+<td>❌</td>
+<td>✅</td>
+<td>⚠️(仅正确率)</td>
+<td>❌</td>
+<td>✅<strong>(核心差异)</strong></td>
+</tr>
+<tr>
+<td>个人成长闭环(C 端视角)</td>
+<td>❌</td>
+<td>⚠️ B 端管理视角</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅<strong>(核心差异)</strong></td>
+</tr>
+</table>
+
+<h2>3.4 闭环概念定义</h2>
+
+<p>在进入"竞品功能流转分析"之前,我们需要先对"闭环"这一概念做明确定义。"闭环"是 StudyHere 与其他竞品最关键的差异化维度。</p>
+
+<h3>3.4.1 为什么考察"闭环"</h3>
+
+<p>对学习类产品而言,"用户是否能持续回来"是产品价值成立的核心。一个产品如果用户用一次就不再回来,即使单次体验再好,也无法形成商业价值。"闭环"的本质是:</p>
+
+<ul>
+  <li>产品能否让用户的<strong>下一步行为</strong>自然发生</li>
+  <li>产品能否把<strong>用户的输出</strong>变成<strong>下一次输入的养料</strong></li>
+  <li>产品能否形成"使用越多越好用"的飞轮</li>
+</ul>
+
+<h3>3.4.2 三种流转类型定义</h3>
+
+<table>
+<tr><th>类型</th><th>定义</th><th>用户体验后果</th></tr>
+<tr><td><strong>单向流转</strong></td><td>用户的输入经过产品处理后产生输出,输出即终点,不再产生下一步行为或新输入</td><td>用户用完一次后没有继续使用的动力,易流失</td></tr>
+<tr><td><strong>半闭环</strong></td><td>产品在某一环节内部形成循环(如"卡片 → 记忆 → 卡片"),但环路狭窄,与产品的其他模块无联动</td><td>用户在单一功能内可持续使用,但产品价值受限于该单一功能</td></tr>
+<tr><td><strong>全闭环</strong></td><td>用户的输出(如错题、学习行为)成为下一次循环的输入,形成"学 → 练 → 考 → 纠 → 评 → 再学"的自驱循环</td><td>用户使用越多产品越懂他,持续回来动力强</td></tr>
+</table>
+
+<h2>3.5 竞品功能流转分析</h2>
+
+<p>基于上述定义,我们对四款竞品的流转模式做如下评估:</p>
+
+<table>
+<tr><th>竞品</th><th>用户旅程</th><th>闭环类型</th><th>我们的机会</th></tr>
+<tr><td>Heuristica</td><td>资料 → 概念图 → 学习材料</td><td>单向</td><td>无评估、无再练习触发</td></tr>
+<tr><td>北森</td><td>任务配置 → 对话训练 → AI 评分 → 报告 → 管理分析</td><td>准闭环(B 端管理视角)</td><td>数据流向"管理者",而非"学习者自驱"</td></tr>
+<tr><td>Quizlet</td><td>资料 → 卡片 → 反复记忆</td><td>半闭环</td><td>仅记忆循环,无评估、无路径调整</td></tr>
+<tr><td>NotebookLM</td><td>资料 → 多模态输出</td><td>单向</td><td>无练习、无评估</td></tr>
+<tr><td><strong>StudyHere</strong></td><td>资料+目标 → 计划 → 学练考纠 → 评估 → 再学</td><td><strong>全闭环</strong></td><td>—</td></tr>
+</table>
+
+<h2>3.6 核心差异化</h2>
+
+<p>基于上述对比分析,我们提炼出 StudyHere 的核心差异化维度。在描述时,我们坚持<strong>具体举证</strong>而非泛泛而论:</p>
+
+<table>
+<tr><th>差异化维度</th><th>说明</th><th>对比对象的做法</th></tr>
+<tr><td><strong>① 目标驱动</strong></td><td>所有学习活动围绕"用户的学习目标"组织</td><td>Heuristica 围绕"概念图节点"组织;Quizlet 围绕"卡片"组织;NotebookLM 围绕"资料"组织</td></tr>
+<tr><td><strong>② 全闭环设计</strong></td><td>学练考纠四模块 + 单元/当日/阶段三层评估</td><td>Heuristica、NotebookLM 为单向流转;Quizlet 为单一模块的半闭环;北森的闭环服务于 B 端管理而非 C 端学习者</td></tr>
+<tr><td><strong>③ 任意模块都有下一步</strong></td><td>任何模块完成后都提供"主推荐 + 备选"的智能推荐</td><td>多数竞品在单模块完成后没有跨模块跳转,用户需主动决策"下一步做什么"</td></tr>
+<tr><td><strong>④ 个性化路径</strong></td><td>基于用户上传的资料 + 设定目标动态生成学习计划</td><td>培训机构课程为统一录播;Quizlet 的卡组为社区共享</td></tr>
+<tr><td><strong>⑤ C 端自驱视角</strong></td><td>评估结果给学习者本人看,激励其主动调整学习节奏</td><td>北森的评估报告给管理者看,服务于"管理团队能力"</td></tr>
+</table>
+
+<h2>3.7 vs 用户当前替代方案</h2>
+
+<table>
+<tr><th>当前方案</th><th>痛点</th><th>StudyHere 的解</th></tr>
+<tr><td>直接问 ChatGPT</td><td>无计划、无追踪、无闭环、每次重讲背景</td><td>有目标、有计划、有评估、记忆持续</td></tr>
+<tr><td>NotebookLM 处理资料</td><td>只能问答,不能"考"和"纠"</td><td>完整学练考纠闭环</td></tr>
+<tr><td>看培训机构录播课</td><td>课程标准化,看不完、不个性化</td><td>基于个人目标的定制路径</td></tr>
+<tr><td>自己用 Anki / 笔记</td><td>需要手工制作,门槛高,无评估</td><td>AI 自动生成,带评估闭环</td></tr>
+<tr><td>各种网课 + 题库 App</td><td>工具碎片化,数据不互通</td><td>一站式闭环,数据沉淀</td></tr>
+</table>
+
+<!-- ============ 第四章 ============ -->
+<h1 id="ch4">四、用户研究</h1>
+
+<h2>4.1 目标用户定位</h2>
+
+<p>StudyHere 服务 <strong>22-35 岁有明确学习目标(知识掌握 / 技能学习)的人群</strong>。</p>
+
+<p>我们没有在 MVP 阶段对用户群做垂直收敛(如仅服务"CFA 备考者"或"程序员"),原因是:用户群收敛会限制产品定位,而用户群广带来的输入不可控风险,我们通过<strong>输入侧约束 + AI 预检 + 推荐资料兜底</strong>三层机制控制(详见第十二章)。</p>
+
+<h2>4.2 用户画像分类完整性说明</h2>
+
+<p>我们对"22-35 岁有明确学习目标"的人群做了穷举式画像分析,识别出以下主要类型。MVP 阶段我们重点支持其中三类典型用户。</p>
+
+<table>
+<tr><th>画像类型</th><th>占比估算</th><th>MVP 支持</th><th>说明</th></tr>
+<tr><td>A 在职考证党</td><td>~35%</td><td>✅ 主力</td><td>有明确考试日期、付费意愿强</td></tr>
+<tr><td>B 职场速学者</td><td>~25%</td><td>✅ 主力</td><td>因岗位变化或新项目需快速掌握新技能</td></tr>
+<tr><td>C 学生考研党</td><td>~25%</td><td>✅ 主力</td><td>有长周期备考需求</td></tr>
+<tr><td>D 兴趣学习者</td><td>~10%</td><td>⚠️ 不主推</td><td>无明确目标,留存难度大</td></tr>
+<tr><td>E 企业内训学员</td><td>~5%</td><td>❌ 不在 MVP</td><td>B 端场景,产品形态差异大,放入 3.0</td></tr>
+</table>
+
+<p>MVP 阶段聚焦 A/B/C 三类用户,因其共性最强(详见 4.4),且付费意愿与持续使用动力清晰可验证。D 类用户可使用产品但不作为主要目标,E 类用户的需求差异较大,放入 3.0 Roadmap。</p>
+
+<h2>4.3 三类典型用户画像</h2>
+
+<h3>4.3.1 主画像 A · 王琳</h3>
+
+<table class="field-table">
+<tr><td>基本信息</td><td>32 岁、上海、互联网公司高级 PM、收入 60 万/年</td></tr>
+<tr><td>当前情境</td><td>公司要求 PM 岗 PMP 持证,已交 ¥4500 培训费,报名 2026/8 PMP 考试</td></tr>
+<tr><td>学习时间</td><td>工作日 19:30-22:00,周末半天</td></tr>
+<tr><td>核心痛点</td><td>① 80 小时培训视频看不完<br>② 不知道每天该学什么<br>③ 做错题不知道哪个领域薄弱</td></tr>
+<tr><td>付费意愿</td><td>已为 PMP 投入 ¥4500+,愿付 ¥99-298 给"帮我通过"的工具</td></tr>
+<tr><td>StudyHere 提供的价值</td><td>上传讲义 + 设定考期 → AI 生成 90 天计划 → 碎片时间学练考纠 → 90 天后准备就绪</td></tr>
+</table>
+
+<blockquote>
+关于"画像 A 中关于专业老师答疑/解题思路的部分是否能由 StudyHere 提供":我们已在画像描述中移除了相关价值表述。StudyHere 不替代专业老师的个性化答疑,而是聚焦于"AI 能高质量完成的部分"——学习计划、闪卡、选择题、错题归因、薄弱点提示。对答疑类深度需求,1.0 阶段会通过"AI 对话 + 资料溯源(RAG)"提供初步支持,2.0 阶段才会引入更深度的诊断能力。
+</blockquote>
+
+<h3>4.3.2 主画像 B · 李翔</h3>
+
+<table class="field-table">
+<tr><td>基本信息</td><td>28 岁、北京、互联网 PM、工作 4 年</td></tr>
+<tr><td>当前情境</td><td>被分配数据分析项目,2 周后要交方案,需要快速掌握数据分析能力</td></tr>
+<tr><td>学习时间</td><td>每天 1-1.5 小时(午休 + 晚上)</td></tr>
+<tr><td>核心痛点</td><td>① 时间紧,需要高效<br>② 没人规划学习路径<br>③ 学完不知道是否真的掌握</td></tr>
+<tr><td>付费意愿</td><td>中等,愿付 ¥30-100 给"加速我学会"的工具</td></tr>
+<tr><td>StudyHere 提供的价值</td><td>上传数据分析书的关键章节 → AI 出 14 天速成计划 → 完成后能开始项目</td></tr>
+</table>
+
+<h3>4.3.3 主画像 C · 小张</h3>
+
+<table class="field-table">
+<tr><td>基本信息</td><td>22 岁、武汉、大三、应届考研</td></tr>
+<tr><td>当前情境</td><td>备考 2027 年 1 月研究生考试,8 个月备考期</td></tr>
+<tr><td>学习时间</td><td>每天 4-6 小时</td></tr>
+<tr><td>核心痛点</td><td>① 资料散乱<br>② 不知道每天应该看哪章<br>③ 学过的容易忘</td></tr>
+<tr><td>付费意愿</td><td>偏低(学生),愿付 ¥30-50 月度订阅</td></tr>
+<tr><td>StudyHere 提供的价值</td><td>上传专业课资料 → AI 出 240 天计划 → 每天闭环学习 → 长期记忆</td></tr>
+</table>
+
+<h2>4.4 三类用户共同特征</h2>
+
+<p>三类用户能被同一款产品服务的根本原因,在于他们的学习行为模式具有高度共性:</p>
+
+<table>
+<tr><th>共同特征</th><th>对 StudyHere 的产品意义</th></tr>
+<tr><td>有明确学习目标(不是泛阅读)</td><td>AI 围绕目标定制路径有意义</td></tr>
+<tr><td>有学习资料(PDF / Word)</td><td>资料上传是产品入口</td></tr>
+<tr><td>时间有限或碎片化</td><td>"短时高效"是核心价值</td></tr>
+<tr><td>害怕学不会 / 没产出</td><td>评估闭环给确定性</td></tr>
+<tr><td>愿意为"学得会"付费</td><td>商业模式可建立</td></tr>
+</table>
+
+<!-- ============ 第五章 ============ -->
+<h1 id="ch5">五、产品定位与策略</h1>
+
+<h2>5.1 一句话定位</h2>
+
+<blockquote style="font-size: 17px; text-align: center;">
+<strong>StudyHere 是帮你掌握任何知识和技能的 AI 学习闭环平台。</strong><br>
+上传资料 + 设定目标 → AI 生成方案 → 学练考纠完整闭环 → 评估反馈 → 完成学习目标
+</blockquote>
+
+<h2>5.2 价值主张</h2>
+
+<table>
+<tr><th>对谁</th><th>解决什么问题</th><th>核心价值</th></tr>
+<tr><td>对用户</td><td>把"学习"从"自我管理"变成"AI 协助"</td><td>不用规划路径、不用挑题、不用怀疑自己学没学会</td></tr>
+<tr><td>对市场</td><td>填补 C 端学习闭环空白</td><td>第一个"通用资料 + 完整学练考纠 + 评估闭环"的产品</td></tr>
+</table>
+
+<h2>5.3 商业模式分阶段策略</h2>
+
+<p>0-1 阶段不设置付费墙,原因如下:</p>
+
+<ul>
+  <li>MVP 验证的是"用户要不要",不是"用户付多少"</li>
+  <li>早期付费墙会让 D7 / D14 留存数据失真</li>
+  <li>用户尚未感受到产品价值时设置付费墙,违反 0-1 节奏</li>
+</ul>
+
+<table>
+<tr><th>阶段</th><th>商业策略</th><th>目的</th></tr>
+<tr><td>MVP(0-3 月)</td><td>完全免费 + 邀请码机制</td><td>验证留存和闭环,不验证付费</td></tr>
+<tr><td>1.0(3-6 月)</td><td>引入付费意向测试(调研 + Smoke test)</td><td>测付费意愿,不真收钱</td></tr>
+<tr><td>2.0(6-9 月)</td><td>Freemium + 订阅,付费墙设在"诊断深度"</td><td>建立可持续商业模式</td></tr>
+<tr><td>3.0(9-12 月)</td><td>B 端 + 教育机构合作多元化收入</td><td>商业化扩张</td></tr>
+</table>
+
+<blockquote>
+关于"付费墙为什么设在诊断深度而非 AI 对话次数",以及"3.0 B 端商业模式的具体路径",详见《StudyHere 关键信息说明文档》§5。
+</blockquote>
+
+<!-- ============ 第六章 ============ -->
+<h1 id="ch6">六、产品愿景与 MVP 范围</h1>
+
+<p>本章并列展示 StudyHere 的<strong>完整产品愿景图</strong>(对应团队此前完成的 HTML 流程图)与 <strong>MVP 裁剪版</strong>。两图一并提供,目的是让读者既能看到长期蓝图,也能看到本期边界。</p>
+
+<h2>6.1 完整产品愿景图(对应 1.0+ 形态)</h2>
+
+<div class="mermaid">
+flowchart TD
+    Start([官网落地页]) --> Auth[注册/登录]
+    Auth --> Home[首页<br/>全部·精选·我的知识宝库]
+
+    Home --> AllLib[全部宝库]
+    Home --> FeatLib[精选宝库平台]
+    Home --> MyLib[我的知识宝库]
+
+    MyLib --> Create[创建知识宝库<br/>批量上传 PDF/Word/MD<br/>填写学习目标]
+    Create --> Plan[AI 生成学习计划<br/>3-5 个方案供选择]
+    Plan --> PlanConfirm[计划确认页<br/>天数·每日时长·提醒·知识点预览]
+    PlanConfirm --> Agent[智能体设置<br/>预设角色 4 选 1 或自定义]
+    Agent --> Detail
+
+    AllLib -.浏览.-> Detail
+    FeatLib -.克隆.-> Detail
+
+    Detail[知识宝库详情页<br/>顶部 宝库信息+进度条<br/>Tab 资料·学·练·考·错题·笔记·AI 对话]
+
+    Detail --> Study[学·闪卡浏览]
+    Detail --> Practice[练·每日测验]
+    Detail --> Exam[考·模拟考试]
+    Detail --> Wrong[错题本·反复练]
+    Detail --> Chat[AI 对话]
+    Detail --> Notes[笔记]
+
+    Study --> StudyReport[学习报告<br/>主推荐+备选]
+    Practice --> PracReport[练习报告<br/>掌握度分流+备选]
+    Exam --> ExamReport[考试报告<br/>掌握度分流+备选]
+    Wrong --> WrongReport[错题清除报告<br/>主推荐+备选]
+
+    StudyReport -.下一步.-> NextStep
+    PracReport -.下一步.-> NextStep
+    ExamReport -.下一步.-> NextStep
+    WrongReport -.下一步.-> NextStep
+
+    NextStep{智能下一步<br/>主推荐+备选}
+    NextStep -.返回.-> Detail
+
+    Detail --> DailyEnd{当日计划<br/>是否完成?}
+    DailyEnd -.完成.-> DailyDone[每日打卡<br/>连续天数·明日预告]
+    DailyDone --> Track[学习进度追踪<br/>完成率·掌握度雷达]
+
+    Track --> PlanEnd{所有天数<br/>完成?}
+    PlanEnd -.是.-> Final[掌握度终极测评<br/>雷达图·诊断卷·三档结论]
+    Final --> LongTerm[长期记忆模式<br/>间隔重复推送薄弱闪卡]
+
+    style Create fill:#e7d4f4,stroke:#722ed1
+    style Plan fill:#e7d4f4,stroke:#722ed1
+    style Agent fill:#e7d4f4,stroke:#722ed1
+    style Chat fill:#e7d4f4,stroke:#722ed1
+    style Notes fill:#e7d4f4,stroke:#722ed1
+    style AllLib fill:#e7d4f4,stroke:#722ed1
+    style FeatLib fill:#e7d4f4,stroke:#722ed1
+    style Final fill:#e7d4f4,stroke:#722ed1
+    style LongTerm fill:#e7d4f4,stroke:#722ed1
+</div>
+
+<p class="footnote">紫色节点为 MVP 不做、列入 1.0/2.0/3.0 Roadmap 的功能</p>
+
+<h2>6.2 MVP 裁剪版流程图</h2>
+
+<p>MVP 流程在愿景图基础上做了三类调整:</p>
+
+<ol>
+  <li><strong>砍掉</strong>:智能体设置、笔记、AI 对话、全部/精选宝库、长期记忆、终极测评</li>
+  <li><strong>简化</strong>:计划 3-5 方案简化为 1 方案、雷达图简化为列表展示</li>
+  <li><strong>新增</strong>:推荐资料入口、AI 预检兜底机制(应对"输入不可控")</li>
+</ol>
+
+<p>MVP 流程图严格遵循"任何模块完成后都必须有下一步"的原则:</p>
+
+<div class="mermaid">
+flowchart TD
+    Start([官网/首页]) --> Auth[注册/登录]
+    Auth --> Home[首页<br/>我的学习宝库 + 推荐资料]
+
+    Home --> Create[创建学习宝库<br/>上传 PDF/Word ≤30 页]
+    Home -.无资料体验.-> Sample[使用推荐资料<br/>5 份精选库]
+    Sample --> Create
+
+    Create --> PreCheck{AI 预检<br/>资料+目标}
+    PreCheck -.不通过.-> Reject[友好提示+引导]
+    Reject -.重选.-> Home
+    PreCheck -.通过.-> Plan[AI 生成学习计划]
+
+    Plan --> PlanConfirm[计划确认页]
+    PlanConfirm --> Detail[宝库详情页<br/>Tab: 学·练·考·纠·进度]
+
+    Detail --> Study[学·闪卡<br/>当日 N 张]
+    Detail --> Practice[练·每日小测<br/>5-10 道]
+    Detail --> Exam[考·阶段测验<br/>15-20 道综合]
+    Detail --> Wrong[纠·错题本<br/>按知识点归类]
+    Detail --> Progress[进度页]
+
+    Study --> StudyEval[学完评估<br/>+ 智能下一步]
+    Practice --> PracEval[小测报告<br/>掌握度分流<br/>+ 智能下一步]
+    Exam --> ExamEval[考试报告<br/>掌握度分流<br/>+ 智能下一步]
+    Wrong --> WrongEval[错题清除报告<br/>+ 智能下一步]
+
+    StudyEval --> NextStep{下一步推荐<br/>主+备选 1+备选 2}
+    PracEval --> NextStep
+    ExamEval --> NextStep
+    WrongEval --> NextStep
+
+    NextStep -.返回.-> Detail
+    Detail --> DayCheck{当日<学+练><br/>是否完成?}
+    DayCheck -.完成.-> DailyDone[当日完成<br/>连续天数+次日预告]
+    DayCheck -.未完成.-> Detail
+
+    DailyDone --> NextDay[次日继续]
+    NextDay --> Detail
+
+    DailyDone -.全计划完成.-> Final[计划完成总结]
+
+    style Create fill:#d4f4dd,stroke:#52c41a
+    style Sample fill:#fff7e6,stroke:#fa8c16
+    style PreCheck fill:#fff7e6,stroke:#fa8c16
+    style Plan fill:#d4f4dd,stroke:#52c41a
+    style Study fill:#cfe2ff,stroke:#1a6ee0
+    style Practice fill:#fff3cd,stroke:#faad14
+    style Exam fill:#f8d7da,stroke:#f5222d
+    style Wrong fill:#f5c6cb,stroke:#cf1322
+    style StudyEval fill:#e6f4ff,stroke:#1a6ee0
+    style PracEval fill:#e6f4ff,stroke:#1a6ee0
+    style ExamEval fill:#e6f4ff,stroke:#1a6ee0
+    style WrongEval fill:#e6f4ff,stroke:#1a6ee0
+    style NextStep fill:#d4f4dd,stroke:#52c41a
+</div>
+
+<h2>6.3 节点级愿景 vs MVP 对照表</h2>
+
+<table>
+<tr><th>愿景节点</th><th>MVP 处理</th><th>简化方式</th><th>所属版本</th></tr>
+<tr><td>注册登录</td><td><span class="check">保留</span></td><td>手机号一键登录</td><td><span class="priority-p0">P0</span></td></tr>
+<tr><td>全部宝库 / 精选宝库</td><td><span class="cross">移除</span></td><td>—</td><td><span class="priority-p3">P3 社区</span></td></tr>
+<tr><td>推荐资料(5 份精选库)</td><td><span class="check">新增</span></td><td>团队预制 5 份精选资料,作为兜底</td><td><span class="priority-p0">P0 新增</span></td></tr>
+<tr><td>创建宝库 + 上传资料</td><td><span class="check">保留</span></td><td>仅支持 PDF/Word,≤30 页</td><td><span class="priority-p0">P0</span></td></tr>
+<tr><td>AI 预检</td><td><span class="check">新增</span></td><td>资料质量 + 目标匹配检查</td><td><span class="priority-p0">P0 新增</span></td></tr>
+<tr><td>AI 生成学习计划(3-5 方案)</td><td>简化</td><td>1 个方案 + 可调时长</td><td><span class="priority-p0">P0</span></td></tr>
+<tr><td>智能体设置</td><td><span class="cross">移除</span></td><td>用默认风格</td><td><span class="priority-p1">P1</span></td></tr>
+<tr><td>学(闪卡)</td><td><span class="check">保留</span></td><td>AI 生成,标记懂/不懂</td><td><span class="priority-p0">P0</span></td></tr>
+<tr><td>练(每日小测)</td><td><span class="check">保留</span></td><td>5-10 道选择题</td><td><span class="priority-p0">P0</span></td></tr>
+<tr><td>考(模拟考试)</td><td><span class="check">保留</span></td><td>阶段测验,15-20 道综合</td><td><span class="priority-p0">P0</span></td></tr>
+<tr><td>错题本</td><td><span class="check">保留</span></td><td>按知识点归类,可随时退出</td><td><span class="priority-p0">P0</span></td></tr>
+<tr><td>笔记</td><td><span class="cross">移除</span></td><td>—</td><td><span class="priority-p2">P2</span></td></tr>
+<tr><td>AI 对话</td><td><span class="cross">移除</span></td><td>—</td><td><span class="priority-p2">P2</span></td></tr>
+<tr><td>评估 + 智能下一步</td><td><span class="check">保留</span></td><td>规则评分 + 3 选 1 推荐</td><td><span class="priority-p0">P0</span></td></tr>
+<tr><td>每日打卡 + 连续天数</td><td><span class="check">保留</span></td><td>简单展示</td><td><span class="priority-p0">P0</span></td></tr>
+<tr><td>掌握度雷达图</td><td>简化</td><td>列表展示</td><td><span class="priority-p1">P1 升级雷达</span></td></tr>
+<tr><td>终极测评</td><td>简化</td><td>简单完成总结页</td><td><span class="priority-p1">P1</span></td></tr>
+<tr><td>长期记忆</td><td><span class="cross">移除</span></td><td>—</td><td><span class="priority-p2">P2</span></td></tr>
+</table>
+
+<blockquote>
+关于"为什么 MVP 时间安排是 4 天 → 1.0 1-2 月 → 2.0 3-6 月 → 3.0 6-12 月",以及"在 AI 工具辅助开发下这个时间是否可以优化",详见《StudyHere 关键信息说明文档》§6。
+</blockquote>
+
+<!-- ============ 第七章 ============ -->
+<h1 id="ch7">七、产品架构</h1>
+
+<p>本章遵循"业务模型的划分方式 + 模块间的协作关系 + 数据的流转路径"三要素,采用四层架构模型(数据层 / 能力层 / 场景层 / 触达层)描述 StudyHere 的产品架构。</p>
+
+<h2>7.1 五个问题回答</h2>
+
+<table>
+<tr><th>问题</th><th>对应层</th><th>StudyHere 的答案</th></tr>
+<tr><td>数据从哪来?</td><td>数据层</td><td>用户上传资料、用户学习行为、推荐资料库、AI 生成内容</td></tr>
+<tr><td>拿数据做什么处理?</td><td>能力层</td><td>知识点提炼、计划生成、闪卡/题目生成、掌握度计算、推荐</td></tr>
+<tr><td>能力怎么组合成场景?</td><td>场景层</td><td>学练考纠四模块 + 评估闭环</td></tr>
+<tr><td>结果怎么交付给用户?</td><td>触达层</td><td>Web 端(MVP)、移动 Web(响应式)</td></tr>
+<tr><td>数据往哪沉淀?</td><td>数据流转</td><td>学习行为 → 掌握度 → 推荐 → 再学(全闭环)</td></tr>
+</table>
+
+<h2>7.2 产品架构图</h2>
+
+<div class="mermaid">
+flowchart TB
+    subgraph Touch[触达层]
+        Web[Web 端<br/>桌面 + 移动浏览器]
+    end
+
+    subgraph Scene[场景层]
+        Onb[Onboarding<br/>创建宝库]
+        Loop[学练考纠闭环]
+        Eval[评估反馈]
+        Track[进度追踪]
+    end
+
+    subgraph Capa[能力层]
+        AI1[AI 资料预检]
+        AI2[AI 知识点提炼]
+        AI3[AI 计划生成<br/>LLM+规则]
+        AI4[AI 闪卡生成]
+        AI5[AI 题目生成]
+        AI6[AI 答案讲解]
+        Rule1[规则·掌握度计算]
+        Rule2[规则·下一步推荐]
+    end
+
+    subgraph Data[数据层]
+        UserData[用户上传资料]
+        BehaviorData[学习行为数据]
+        SampleData[推荐资料库<br/>5 份预制]
+        GenData[AI 生成内容缓存]
+    end
+
+    Touch --> Scene
+    Scene --> Capa
+    Capa --> Data
+
+    Data -.沉淀.-> BehaviorData
+    BehaviorData -.反哺.-> Rule1
+    Rule1 -.驱动.-> Rule2
+    Rule2 -.推荐.-> Loop
+
+    style Touch fill:#fff7e6,stroke:#fa8c16
+    style Scene fill:#e6f4ff,stroke:#1a6ee0
+    style Capa fill:#f9f0ff,stroke:#722ed1
+    style Data fill:#f6ffed,stroke:#52c41a
+</div>
+
+<h2>7.3 数据流转图(全闭环)</h2>
+
+<div class="mermaid">
+flowchart LR
+    A[用户输入<br/>资料 + 目标] --> B[AI 处理<br/>知识点提炼]
+    B --> C[学习计划]
+    C --> D[学练考纠]
+    D --> E[评估数据<br/>掌握度+错题]
+    E --> F[智能推荐<br/>下一步]
+    F --> D
+    E --> G[进度沉淀<br/>个人成长]
+    G -.周期性触发.-> D
+    G -.反哺.-> C
+
+    style A fill:#fff7e6,stroke:#fa8c16
+    style B fill:#f9f0ff,stroke:#722ed1
+    style D fill:#e6f4ff,stroke:#1a6ee0
+    style E fill:#f6ffed,stroke:#52c41a
+    style F fill:#f6ffed,stroke:#52c41a
+    style G fill:#f6ffed,stroke:#52c41a
+</div>
+
+<p>数据流转的全闭环体现在:</p>
+
+<ul>
+  <li><strong>D → E → F → D</strong>:学习行为产生评估数据,评估数据驱动智能推荐,推荐又回到学习闭环</li>
+  <li><strong>E → G → D</strong>:评估数据沉淀为个人成长档案,周期性触发再学习(如错题积压提醒)</li>
+  <li><strong>G → C</strong>:个人成长数据反哺学习计划调整(1.0+ 阶段)</li>
+</ul>
+
+<!-- ============ 第八章 ============ -->
+<h1 id="ch8">八、信息架构</h1>
+
+<p>本章遵循信息架构标准规范:页面层级清晰、命名一致、跳转关系完整,且最终形成闭环。</p>
+
+<h2>8.1 一级模块</h2>
+
+<table>
+<tr><th>模块</th><th>路径</th><th>说明</th></tr>
+<tr><td>首页</td><td>/</td><td>我的学习宝库列表 + 推荐资料入口</td></tr>
+<tr><td>创建宝库</td><td>/create</td><td>上传资料、填写目标</td></tr>
+<tr><td>宝库详情</td><td>/vault/[id]</td><td>核心使用页面,包含学练考纠</td></tr>
+<tr><td>推荐资料</td><td>/samples</td><td>5 份预制资料一键体验入口</td></tr>
+<tr><td>个人设置</td><td>/settings</td><td>账号信息、退出登录</td></tr>
+</table>
+
+<h2>8.2 完整信息架构图(闭环版)</h2>
+
+<div class="mermaid">
+flowchart LR
+    Root[首页 /] --> Create[/create<br/>创建宝库]
+    Root --> Samples[/samples<br/>推荐资料]
+    Root --> VaultList[宝库列表]
+    Root --> Settings[/settings<br/>个人设置]
+
+    Create --> Vault[/vault/id<br/>宝库详情]
+    Samples --> Create
+    VaultList --> Vault
+
+    Vault --> V1[/vault/id/info<br/>资料信息]
+    Vault --> V2[/vault/id/study<br/>学·闪卡]
+    Vault --> V3[/vault/id/practice<br/>练·小测]
+    Vault --> V4[/vault/id/exam<br/>考·阶段测验]
+    Vault --> V5[/vault/id/wrong<br/>纠·错题本]
+    Vault --> V6[/vault/id/progress<br/>进度页]
+
+    V2 --> R2[/study/report<br/>学习评估]
+    V3 --> R3[/practice/report<br/>小测报告]
+    V4 --> R4[/exam/report<br/>考试报告]
+    V5 --> R5[/wrong/report<br/>错题清除报告]
+
+    R2 --> NS{下一步推荐}
+    R3 --> NS
+    R4 --> NS
+    R5 --> NS
+
+    NS -.主推荐/备选.-> V2
+    NS -.主推荐/备选.-> V3
+    NS -.主推荐/备选.-> V4
+    NS -.主推荐/备选.-> V5
+    NS -.返回.-> Vault
+
+    Vault -.全计划完成.-> Final[/vault/id/final<br/>计划完成总结]
+    Final --> Root
+
+    style Vault fill:#e6f4ff,stroke:#1a6ee0
+    style NS fill:#f6ffed,stroke:#52c41a
+    style Final fill:#f9f0ff,stroke:#722ed1
+</div>
+
+<p>关键设计点:</p>
+
+<ul>
+  <li><strong>所有评估报告(R2-R5)都汇入"下一步推荐(NS)"</strong>,不存在"评估完无去向"的死路</li>
+  <li><strong>下一步推荐能跳回任意学练考纠模块或返回详情页</strong>,形成完整闭环</li>
+  <li><strong>计划完成总结(Final)是闭环终点,但会回到首页</strong>,引导用户创建新宝库,启动下一轮闭环</li>
+</ul>
+
+<!-- ============ 第九章 ============ -->
+<h1 id="ch9">九、核心流程</h1>
+
+<h2>9.1 核心设计原则</h2>
+
+<blockquote>
+<strong>不允许任何"做完没下一步"的死路</strong>。任何最小单元(学/练/考/纠)完成后,必须有"主推荐 + 备选 1 + 备选 2"三个可选去向。<br><br>
+<strong>掌握度分流仅在"练"和"考"之后生效</strong>。学(闪卡)只有"懂/不懂"主观自评,无客观掌握度;纠(错题本)是输出修正,本身不产生新的掌握度数据。
+</blockquote>
+
+<h2>9.2 智能下一步推荐矩阵</h2>
+
+<p>每个模块完成后的推荐逻辑,使用 MVP 阶段的规则引擎实现(不依赖 LLM,保证可解释与稳定):</p>
+
+<table>
+<tr><th>当前模块</th><th>完成情况</th><th>主推荐</th><th>备选 1</th><th>备选 2</th></tr>
+<tr><td>学完闪卡</td><td>—</td><td>练(去客观验证)</td><td>看进度</td><td>返回详情页</td></tr>
+<tr><td rowspan="3">练完小测</td><td>掌握度 &lt; 60</td><td>回学(薄弱知识点)</td><td>错题本</td><td>看进度</td></tr>
+<tr><td>掌握度 60-85</td><td>考(阶段测验)</td><td>练更多</td><td>错题本</td></tr>
+<tr><td>掌握度 ≥ 85</td><td>进入次日</td><td>考(挑战)</td><td>看进度</td></tr>
+<tr><td rowspan="3">考完阶段测验</td><td>有错题</td><td>纠(错题本)</td><td>回学薄弱点</td><td>看进度</td></tr>
+<tr><td>整体 &lt; 60</td><td>回学相关点</td><td>看错题归因</td><td>暂停休息</td></tr>
+<tr><td>无错题且达标</td><td>进入次日</td><td>看进度</td><td>查看完整报告</td></tr>
+<tr><td rowspan="2">纠完错题</td><td>全部清空</td><td>考(再验证)</td><td>进入次日</td><td>看进度</td></tr>
+<tr><td>部分剩余</td><td>继续清错题(还有 X 题)</td><td>回学相关点</td><td>看当日进度</td></tr>
+<tr><td>当日<学+练>完成</td><td>—</td><td>打卡 + 看次日预告</td><td>查看周度进度</td><td>查看整体进度</td></tr>
+<tr><td>整个计划完成</td><td>—</td><td>查看完成总结</td><td>调整计划</td><td>开新宝库</td></tr>
+</table>
+
+<h2>9.3 当日完成判定标准</h2>
+
+<p>MVP 阶段采用最简明的当日完成判定:</p>
+
+<table>
+<tr><th>模块</th><th>是否计入"当日完成"</th></tr>
+<tr><td>学(当日闪卡)</td><td>✅ 必须完成</td></tr>
+<tr><td>练(当日小测)</td><td>✅ 必须完成</td></tr>
+<tr><td>考(阶段测验)</td><td>❌ 不强制每日</td></tr>
+<tr><td>纠(错题本)</td><td>❌ 不强制每日清空</td></tr>
+</table>
+
+<p>核心判定逻辑:</p>
+
+<ul>
+  <li><strong>当日"学+练"都完成 = 当日完成</strong></li>
+  <li><strong>当日完成 ≠ 错题清空</strong></li>
+  <li><strong>错题清空 ≠ 当日完成</strong></li>
+  <li><strong>错题本进度独立于当日学习计划,但错题清除会更新到当日进度展示</strong></li>
+</ul>
+
+<blockquote>
+后续 1.0+ 阶段可考虑引入更复杂的判定逻辑(如"按错题占比"或"按阶段考试触发"),MVP 阶段先用最简版本验证核心闭环。
+</blockquote>
+
+<h2>9.4 错题本退出与兜底机制</h2>
+
+<p>错题本作为容易"卡住用户"的模块,设计了完整的退出与积压兜底:</p>
+
+<h3>9.4.1 退出机制</h3>
+
+<ul>
+  <li>错题本任何时候都可以退出</li>
+  <li>用户点击"返回"时弹窗确认:"还有 X 题未完成,确认退出?"</li>
+  <li>退出不强制清空所有错题</li>
+  <li>退出后:部分剩余的错题更新到当日进度展示,但不影响"当日完成"判定</li>
+</ul>
+
+<h3>9.4.2 积压兜底</h3>
+
+<p>MVP 阶段采用简单的"数量阈值"方案,不区分模块和阶段:</p>
+
+<table>
+<tr><th>积压量</th><th>系统行为</th></tr>
+<tr><td>错题数 ≤ 30</td><td>无提示,正常使用</td></tr>
+<tr><td>错题数 &gt; 30</td><td>首页温和提示:"你有 X 道错题待清,要不要花 10 分钟清一下?"</td></tr>
+<tr><td>错题数 &gt; 50</td><td>推荐"专项清错日",在当日学习开始前推送</td></tr>
+<tr><td>30 天未清的错题</td><td>自动归档(不在主列表显示,但可通过筛选查看)</td></tr>
+</table>
+
+<blockquote>
+MVP 阶段不引入"按知识点维度"或"按学习阶段"的复杂错题积压逻辑,保持简单。1.0+ 阶段可根据用户行为数据决定是否增加更细的分类。
+</blockquote>
+
+<h2>9.5 关键流程详解</h2>
+
+<h3>9.5.1 首次使用流程</h3>
+
+<div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant F as 前端
+    participant B as 后端
+    participant AI as AI 引擎
+
+    U->>F: 打开 StudyHere
+    F->>U: 显示首页 + 推荐资料
+    U->>F: 选择"上传我的资料"
+    F->>U: 显示上传页 + 限制说明
+    U->>F: 上传 PDF + 填写目标
+    F->>B: 提交资料和目标
+    B->>AI: 资料预检 + 内容提取
+    AI-->>B: 预检结果
+
+    alt 预检不通过
+        B-->>F: 友好提示
+        F-->>U: "建议调整" + 引导推荐资料
+    else 预检通过
+        B->>AI: 知识点提炼
+        AI-->>B: 知识点列表
+        B->>AI: 生成学习计划
+        AI-->>B: 计划方案
+        B-->>F: 计划展示
+        F-->>U: 计划确认页
+        U->>F: 确认/调整时长
+        F->>B: 保存计划
+        B-->>F: 进入详情页
+    end
+</div>
+
+<h3>9.5.2 日常学习流程</h3>
+
+<div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant F as 前端
+    participant B as 后端
+
+    U->>F: 打开 App
+    F->>B: 获取今日学习内容
+    B-->>F: 闪卡 + 题目列表
+    F-->>U: 详情页(默认进入"学")
+
+    loop 学习闭环
+        U->>F: 完成一个模块
+        F->>B: 提交结果
+        B->>B: 计算掌握度
+        B-->>F: 评估报告 + 智能下一步
+        F-->>U: 显示报告 + 主推荐+备选
+        U->>F: 选择下一步
+    end
+
+    F->>B: 检查当日完成
+    alt 学+练都完成
+        F-->>U: 打卡庆祝 + 次日预告
+    else 未完成
+        F-->>U: 返回详情页继续
+    end
+</div>
+
+<!-- ============ 第十章 ============ -->
+<h1 id="ch10">十、功能详细需求</h1>
+
+<h2>F1 · 账号系统 <span class="priority-p0">P0</span></h2>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>手机号一键登录,自动注册</td></tr>
+<tr><td>详细规则</td><td>· 手机号 + 短信验证码<br>· 60 秒倒计时,1 小时同号码限 5 次<br>· 未注册手机号自动创建账户<br>· JWT Token,有效期 30 天</td></tr>
+<tr><td>关键字段</td><td>user_id(UUID, PK)<span class="field-meta">主键</span><br>phone(string)<span class="field-meta">必填</span><br>nickname(string)<span class="field-meta">默认手机后4位</span><br>created_at(datetime)<span class="field-meta">注册时间</span></td></tr>
+<tr><td>异常处理</td><td>· 验证码错误 → "验证码错误,请重新输入"<br>· 验证码过期 → "验证码已过期,请重新发送"<br>· 网络异常 → "网络异常,请稍后重试"</td></tr>
+</table>
+
+<h2>F2 · 创建学习宝库 <span class="priority-p0">P0</span></h2>
+
+<h3>F2.1 资料上传</h3>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>用户上传 PDF / Word 学习资料</td></tr>
+<tr><td>MVP 限制</td><td>· 格式:.pdf / .docx<br>· 单文件 ≤ 10MB<br>· 单文件 ≤ 30 页<br>· 单宝库 1 份资料(1.0 支持多份)</td></tr>
+<tr><td>UI 交互</td><td>· 拖拽 + 点击上传<br>· 实时上传进度条<br>· 上传完成显示"AI 预检中..."</td></tr>
+<tr><td>技术方案</td><td>· 上传至 Supabase Storage<br>· PDF 解析:pdf.js / pdf-parse<br>· Word 解析:mammoth.js</td></tr>
+<tr><td>异常处理</td><td>· 文件过大 → "文件超过 10MB,请压缩"<br>· 页数过多 → "MVP 阶段最多 30 页,请拆分"<br>· 格式不支持 → "仅支持 PDF / Word"<br>· 扫描版 PDF → "暂不支持扫描版"<br>· 加密 PDF → "PDF 已加密,请先解密"<br>· 上传失败 → 自动重试 1 次,失败后引导推荐资料</td></tr>
+</table>
+
+<h3>F2.2 学习目标填写</h3>
+
+<table>
+<tr><th>字段</th><th>类型</th><th>必填</th><th>规则</th></tr>
+<tr><td>vault_name</td><td>string</td><td>是</td><td>2-30 字,默认 = 文件名</td></tr>
+<tr><td>target_date</td><td>date</td><td>是</td><td>≥ 今天 + 7 天</td></tr>
+<tr><td>daily_minutes</td><td>int</td><td>是</td><td>枚举 15/30/60/90</td></tr>
+<tr><td>study_goal</td><td>text</td><td>是</td><td>10-200 字,描述学习目标</td></tr>
+<tr><td>study_type</td><td>enum</td><td>否</td><td>考试 / 速学 / 兴趣</td></tr>
+</table>
+
+<h3>F2.3 推荐资料入口</h3>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>提供 5 份精选资料,用户无需上传也能体验完整闭环</td></tr>
+<tr><td>预制资料</td><td>1. 产品经理入门 30 讲(节选,15 页)<br>2. Python 基础语法手册(节选,20 页)<br>3. PMP 备考精讲(节选,25 页)<br>4. 商务英语 500 词(节选,20 页)<br>5. 财务基础知识(节选,25 页)</td></tr>
+<tr><td>价值</td><td>· 新用户首次体验稳定<br>· 上传失败的兜底方案<br>· 面试演示的稳定路径</td></tr>
+</table>
+
+<h2>F3 · AI 资料处理 <span class="priority-p0">P0</span></h2>
+
+<h3>F3.1 AI 预检</h3>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>上传后用 LLM 做"内容预检",判断是否适合作为学习材料</td></tr>
+<tr><td>预检维度</td><td>① 是否为学习/知识类资料<br>② 资料内容与学习目标是否匹配<br>③ 资料质量是否足够生成学习计划</td></tr>
+<tr><td>不通过处理</td><td>友好提示 + 建议方向 + 引导推荐资料</td></tr>
+</table>
+
+<h3>F3.2 知识点提炼</h3>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>从用户上传资料中提炼结构化知识点</td></tr>
+<tr><td>技术方案</td><td>① PDF/Word → 文本提取<br>② 按章节/标题分块<br>③ 每个 chunk 调 LLM 提炼<br>④ 多 chunk 结果合并去重<br>⑤ 保存到数据库</td></tr>
+<tr><td>性能指标</td><td>· 30 页 PDF 处理 &lt; 3 分钟<br>· 知识点数量 = 页数 × 2-4<br>· 用户差评率 &lt; 15%</td></tr>
+</table>
+
+<h2>F4 · AI 学习计划生成 <span class="priority-p0">P0</span></h2>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>基于知识点 + 用户目标,生成 N 天学习计划</td></tr>
+<tr><td>混合架构</td><td>· LLM:评估知识点难度/时长/依赖关系<br>· 规则:用背包算法分配到具体天数</td></tr>
+<tr><td>算法逻辑</td><td>详见第十一章 11.4</td></tr>
+<tr><td>用户操作</td><td>· 计划确认页展示<br>· 可调整每日时长(重新生成)<br>· 可调整目标日期(重新生成)</td></tr>
+</table>
+
+<h2>F5 · 学(闪卡浏览) <span class="priority-p0">P0</span></h2>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>当日推送 N 张闪卡,用户标记懂/不懂</td></tr>
+<tr><td>生成时机</td><td>进入"学" Tab 时按需生成(节省 token)</td></tr>
+<tr><td>UI 交互</td><td>· 卡片正面:问题<br>· 点击翻转看答案<br>· 按钮:"懂了" / "不懂"<br>· 自动进入下一张<br>· 完成提示:"今日学习完成"</td></tr>
+<tr><td>完成后行为</td><td>· 单元评估:本轮完成度 + 自评统计<br>· 智能下一步:主推荐"练" + 备选(看进度 / 返回)</td></tr>
+</table>
+
+<h2>F6 · 练(每日小测) <span class="priority-p0">P0</span></h2>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>5-10 道选择题,自动判分</td></tr>
+<tr><td>题目要求</td><td>· 4 个选项,1 个正确<br>· 干扰项必须看似合理<br>· 附详细解析</td></tr>
+<tr><td>UI 交互</td><td>· 选择 → 即时反馈<br>· 答对:绿色 + 看解析<br>· 答错:红色 + 标记答案 + 自动入错题本<br>· 完成显示:正确率 + 薄弱知识点</td></tr>
+<tr><td>掌握度分流</td><td>· &lt; 60:主推荐"回学"<br>· 60-85:主推荐"考"<br>· ≥ 85:主推荐"进入次日"</td></tr>
+</table>
+
+<h2>F7 · 考(阶段测验) <span class="priority-p0">P0</span></h2>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>每完成 N 天触发,15-20 道综合题</td></tr>
+<tr><td>触发条件</td><td>· 自动:每完成 5/7/10 天<br>· 手动:用户主动发起<br>· 推荐:练后掌握度达中等</td></tr>
+<tr><td>题目来源</td><td>跨知识点综合出题(已学的全部知识点)</td></tr>
+<tr><td>掌握度分流</td><td>· 有错题:主推荐"纠"<br>· 整体 &lt; 60:主推荐"回学"<br>· 无错题且达标:主推荐"进入次日"</td></tr>
+</table>
+
+<h2>F8 · 纠(错题本) <span class="priority-p0">P0</span></h2>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>列出所有错题,反复练,答对自动移除</td></tr>
+<tr><td>归类方式</td><td>按知识点归类(MVP 简版)</td></tr>
+<tr><td>UI 交互</td><td>· 错题列表(显示数量、上次错误时间)<br>· 点击查看解析<br>· 重做(答对自动移除)<br>· 顶部"返回"按钮始终可见</td></tr>
+<tr><td>退出机制</td><td>· 任何时候可退出<br>· 退出弹窗:"还有 X 题未完成,确认退出?"<br>· 退出后部分剩余更新到当日进度(不影响当日完成判定)</td></tr>
+<tr><td>积压兜底</td><td>· 错题 &gt; 30:首页温和提示<br>· 错题 &gt; 50:推荐"专项清错日"<br>· 30 天未清:自动归档</td></tr>
+<tr><td>完成后行为</td><td>· 全部清空:主推荐"考(再验证)"<br>· 部分剩余:主推荐"继续清"</td></tr>
+</table>
+
+<h2>F9 · 进度页 <span class="priority-p0">P0</span></h2>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>展示学习进度和掌握度</td></tr>
+<tr><td>展示内容(MVP)</td><td>· 完成度(百分比)<br>· 累计学习天数<br>· 连续学习天数<br>· 总闪卡数 / 已学<br>· 总练习题数 / 已做 / 正确率<br>· 错题数 / 已清除<br>· 各知识点掌握度(<strong>列表</strong>,1.0 升级雷达图)</td></tr>
+</table>
+
+<h2>F10 · 智能下一步推荐 <span class="priority-p0">P0</span></h2>
+
+<table class="field-table">
+<tr><td>功能描述</td><td>任何模块完成后提供 3 个去向(主+备选 1+备选 2)</td></tr>
+<tr><td>规则</td><td>详见 9.2 推荐矩阵</td></tr>
+<tr><td>UI 表现</td><td>· 主推荐(大按钮,高亮)<br>· 备选 1 / 备选 2(普通按钮)<br>· 始终有"返回详情页"出口</td></tr>
+<tr><td>实现方式</td><td>规则引擎(非 LLM),确保稳定 + 可解释 + 零成本</td></tr>
+</table>
+
+<!-- ============ 第十一章 ============ -->
+<h1 id="ch11">十一、AI 能力设计</h1>
+
+<h2>11.1 AI 能力分阶段演进</h2>
+
+<table>
+<tr>
+<th>能力</th>
+<th>MVP</th>
+<th>1.0</th>
+<th>2.0</th>
+<th>3.0</th>
+</tr>
+<tr><td>资料预检</td><td>LLM 简版</td><td>+ 资料分类</td><td>+ 多模态预检</td><td>+ 自动建议</td></tr>
+<tr><td>知识点提炼</td><td>LLM + Few-shot</td><td>+ RAG</td><td>+ 微调小模型</td><td>+ 多模态</td></tr>
+<tr><td>计划生成</td><td>LLM + 规则</td><td>+ 智能调整</td><td>+ 推荐系统</td><td>+ Agent 规划</td></tr>
+<tr><td>闪卡生成</td><td>LLM Few-shot</td><td>+ 资料溯源</td><td>+ 微调</td><td>+ 多模态卡片</td></tr>
+<tr><td>题目生成</td><td>LLM Few-shot</td><td>+ 难度自适应</td><td>+ 微调</td><td>+ 情境化</td></tr>
+<tr><td>答案讲解</td><td>LLM</td><td>+ RAG 引用</td><td>+ 证据化</td><td>+ 个性化</td></tr>
+<tr><td>掌握度计算</td><td>规则</td><td>规则</td><td>+ ML 模型</td><td>+ 行为模型</td></tr>
+<tr><td>下一步推荐</td><td>规则</td><td>+ A/B 测试</td><td>+ 推荐算法</td><td>+ Agent</td></tr>
+</table>
+
+<h2>11.2 模型选型</h2>
+
+<table>
+<tr><th>任务</th><th>模型</th><th>原因</th></tr>
+<tr><td>知识点提炼</td><td>GPT-4o</td><td>质量优先,首次成本可接受</td></tr>
+<tr><td>资料预检</td><td>GPT-4o-mini</td><td>判断任务,简单且高频</td></tr>
+<tr><td>计划生成</td><td>GPT-4o-mini</td><td>结构化输出,成本敏感</td></tr>
+<tr><td>闪卡 / 题目生成</td><td>GPT-4o-mini</td><td>批量生成,成本敏感</td></tr>
+<tr><td>答案讲解</td><td>GPT-4o-mini</td><td>对话式输出</td></tr>
+<tr><td>备选模型</td><td>Claude 3.5 Haiku / 通义千问 Plus / DeepSeek</td><td>多模型备份,降低单点风险</td></tr>
+</table>
+
+<h2>11.3 Prompt 工程原则</h2>
+
+<ul>
+  <li>所有 Prompt 用 Few-shot(2-3 个示例)</li>
+  <li>Structured Output 强约束 JSON 格式</li>
+  <li>温度参数策略:
+    <ul>
+      <li>预检 / 知识点提炼:0.3(求稳)</li>
+      <li>闪卡 / 题目:0.7(求多样)</li>
+      <li>答案讲解:0.5(平衡)</li>
+    </ul>
+  </li>
+  <li>所有 Prompt 版本化管理</li>
+  <li>关键 Prompt 都有 fallback 兜底</li>
+</ul>
+
+<blockquote>
+具体的 Prompt 模板(知识点提炼、闪卡生成、题目生成、答案讲解的完整示例)详见《StudyHere 关键信息说明文档》§7。
+</blockquote>
+
+<h2>11.4 计划生成的混合架构</h2>
+
+<pre><code>// LLM 阶段:评估知识点
+// Input: 知识点列表
+// Output: 每个知识点的难度(1-5)、时长(分钟)、依赖关系
+
+// 规则阶段:分配到天
+total_minutes = sum(kp.estimated_minutes) × 1.5  // 缓冲系数
+days = max(7, ceil(total_minutes / daily_minutes))
+
+// 按依赖关系拓扑排序
+sorted_kps = topological_sort(knowledge_points)
+
+// 分配到每天,周末多分配
+for day in 1..days:
+  weight = 1.5 if is_weekend(day) else 1.0
+  assign(daily_minutes × weight) of kps to day</code></pre>
+
+<h2>11.5 评估与降级</h2>
+
+<table>
+<tr><th>方式</th><th>具体做法</th></tr>
+<tr><td>离线评估</td><td>5 份测试资料 + 标准答案对比,在开发期完成</td></tr>
+<tr><td>在线评估</td><td>用户"赞 / 差"反馈,实时埋点</td></tr>
+<tr><td>差评阈值</td><td>差评率 &gt; 15% → 升级模型(mini → 4o)</td></tr>
+<tr><td>服务异常</td><td>LLM 失败 → 重试 1 次 → 引导推荐资料</td></tr>
+</table>
+
+<!-- ============ 第十二章 ============ -->
+<h1 id="ch12">十二、输入兜底机制</h1>
+
+<p>由于 StudyHere 不对用户群做垂直收敛(详见 4.1),用户上传资料的不确定性是 MVP 阶段最大的风险。本章详细描述四层兜底机制。</p>
+
+<h2>12.1 风险列表</h2>
+
+<table>
+<tr><th>风险</th><th>影响</th><th>应对层级</th></tr>
+<tr><td>用户传扫描版 PDF,文字无法提取</td><td>全链路崩</td><td>第 1 层(输入约束)</td></tr>
+<tr><td>用户传 300 页大书,上下文超限</td><td>处理超时</td><td>第 1 层(页数限制)</td></tr>
+<tr><td>用户传图片/公式重的资料</td><td>AI 理解不准</td><td>第 1 层 + 第 2 层(预检)</td></tr>
+<tr><td>用户传英文资料</td><td>中文 prompt 效果差</td><td>第 1 层(语言限制)</td></tr>
+<tr><td>用户传非学习类资料(简历、合同)</td><td>出题没意义</td><td>第 2 层(AI 预检)</td></tr>
+<tr><td>用户传学习目标过于宽泛</td><td>AI 生成计划无意义</td><td>第 2 层(AI 预检)</td></tr>
+<tr><td>LLM 服务异常或质量差</td><td>核心闭环跑不通</td><td>第 3 层(降级) + 第 4 层(推荐资料)</td></tr>
+</table>
+
+<h2>12.2 四层兜底架构</h2>
+
+<div class="mermaid">
+flowchart TD
+    User[用户进入] --> Choice{选择路径}
+    Choice -->|路径 A| Upload[上传我的资料]
+    Choice -->|路径 B| Sample[使用推荐资料]
+
+    Sample --> Demo[Demo 模式<br/>5 份精心准备资料]
+    Demo --> Success[100% 成功]
+
+    Upload --> Layer1[第 1 层<br/>输入约束]
+    Layer1 --> L1Check{格式/大小/页数<br/>合规?}
+    L1Check -->|否| L1Fail[友好提示<br/>引导调整]
+    L1Fail -.重选.-> Choice
+    L1Check -->|是| Layer2[第 2 层<br/>AI 预检]
+
+    Layer2 --> L2Check{资料质量+目标匹配<br/>通过?}
+    L2Check -->|否| L2Fail[建议方向<br/>引导推荐资料]
+    L2Fail -.重选.-> Choice
+    L2Check -->|是| Layer3[第 3 层<br/>知识点提炼]
+
+    Layer3 --> L3Check{提炼成功?}
+    L3Check -->|否| L3Retry[自动重试 1 次]
+    L3Retry --> L3Check2{重试成功?}
+    L3Check2 -->|否| L4[第 4 层<br/>降级到推荐资料]
+    L4 --> Demo
+    L3Check2 -->|是| Success
+    L3Check -->|是| Success
+
+    style Demo fill:#fff7e6,stroke:#fa8c16
+    style Success fill:#f6ffed,stroke:#52c41a
+    style L1Fail fill:#fff1f0,stroke:#cf1322
+    style L2Fail fill:#fff1f0,stroke:#cf1322
+    style L4 fill:#fff7e6,stroke:#fa8c16
+</div>
+
+<h2>12.3 第一层:输入约束</h2>
+
+<table>
+<tr><th>约束项</th><th>具体规则</th><th>提示文案</th></tr>
+<tr><td>格式</td><td>仅 .pdf / .docx</td><td>"仅支持 PDF 和 Word 格式"</td></tr>
+<tr><td>大小</td><td>≤ 10MB</td><td>"文件超过 10MB,请压缩"</td></tr>
+<tr><td>页数</td><td>≤ 30 页</td><td>"MVP 阶段最多 30 页,请拆分"</td></tr>
+<tr><td>扫描版</td><td>拒绝</td><td>"暂不支持扫描版,请上传文字版"</td></tr>
+<tr><td>语言</td><td>仅中文(MVP)</td><td>"暂不支持其他语言,1.0 版本将支持英文"</td></tr>
+<tr><td>加密</td><td>拒绝</td><td>"PDF 已加密,请先解密"</td></tr>
+<tr><td>学习目标</td><td>10-200 字必填</td><td>"请填写学习目标(10-200 字)"</td></tr>
+</table>
+
+<h2>12.4 第二层:AI 预检</h2>
+
+<table>
+<tr><th>检查项</th><th>判断逻辑</th><th>不通过时</th></tr>
+<tr><td>是否学习/知识类资料</td><td>LLM 判断内容类型</td><td>"这份资料看起来不是学习材料,建议..."</td></tr>
+<tr><td>资料与目标匹配度</td><td>LLM 判断关联性</td><td>"资料与你的目标关联度低,建议..."</td></tr>
+<tr><td>资料质量</td><td>知识点数量 / 结构完整度</td><td>"资料过于零散,建议补充..."</td></tr>
+</table>
+
+<h2>12.5 第三层:提炼降级</h2>
+
+<table>
+<tr><th>情况</th><th>处理方案</th></tr>
+<tr><td>LLM API 错误</td><td>自动重试 1 次</td></tr>
+<tr><td>提取结果为空</td><td>"AI 未能提炼出有效知识点,请试试推荐资料"</td></tr>
+<tr><td>JSON 解析失败</td><td>降级到简单文本切片模式</td></tr>
+</table>
+
+<h2>12.6 第四层:推荐资料兜底</h2>
+
+<p>5 份预制资料经过完整预跑通验证,作为最终兜底:</p>
+
+<table>
+<tr><th>资料</th><th>主题</th><th>难度</th><th>页数</th></tr>
+<tr><td>《产品经理入门 30 讲》节选</td><td>互联网产品</td><td>初级</td><td>15 页</td></tr>
+<tr><td>《Python 基础语法手册》节选</td><td>编程</td><td>初级</td><td>20 页</td></tr>
+<tr><td>《PMP 备考精讲》节选</td><td>项目管理</td><td>中级</td><td>25 页</td></tr>
+<tr><td>《商务英语 500 词》节选</td><td>语言学习</td><td>初级</td><td>20 页</td></tr>
+<tr><td>《财务基础知识》节选</td><td>财务</td><td>初级</td><td>25 页</td></tr>
+</table>
+
+<!-- ============ 第十三章 ============ -->
+<h1 id="ch13">十三、数据指标与假设验证</h1>
+
+<h2>13.1 北极星指标</h2>
+
+<blockquote style="text-align: center; font-size: 16px;">
+<strong>14 天连续学习用户数</strong><br>
+学习类产品的核心价值在于"用户愿意持续回来",14 天是验证 PMF 的关键窗口
+</blockquote>
+
+<h2>13.2 关键假设与指标依据</h2>
+
+<p>本节中所有指标都基于行业 benchmark 和推导逻辑,而非凭空设定。</p>
+
+<h3>13.2.1 H1:用户愿意上传资料并设定目标</h3>
+
+<table class="field-table">
+<tr><td>目标指标</td><td>注册 → 完成首次上传转化率 ≥ 50%</td></tr>
+<tr><td>Benchmark 参考</td><td>· 教育类 App 首次关键行为转化率中位数(QuestMobile)<br>· Notion 首次创建 page、Anki 首次创建卡组、NotebookLM 首次上传等类似产品数据</td></tr>
+<tr><td>推导逻辑</td><td>50% 处于行业中位偏上;考虑到 MVP 阶段有"推荐资料"兜底,这个目标合理</td></tr>
+<tr><td>失败信号</td><td>&lt; 30% 说明上传体验有重大问题</td></tr>
+</table>
+
+<h3>13.2.2 H2:AI 处理质量达到可用水平</h3>
+
+<table class="field-table">
+<tr><td>目标指标</td><td>AI 知识点提炼差评率 &lt; 15%</td></tr>
+<tr><td>Benchmark 参考</td><td>行业 AI 生成内容差评率中位数 10-20%</td></tr>
+<tr><td>推导逻辑</td><td>15% 是"可用线",&lt; 10% 是"优秀线"</td></tr>
+<tr><td>失败信号</td><td>&gt; 20% 说明 Prompt 工程需要重大优化</td></tr>
+</table>
+
+<h3>13.2.3 H3:用户愿意按 AI 计划坚持学习</h3>
+
+<table class="field-table">
+<tr><td>目标指标</td><td>D1 留存 ≥ 50%、D7 留存 ≥ 25%、D14 留存 ≥ 12%</td></tr>
+<tr><td>Benchmark 参考</td><td>· 学习类 App D1 留存(艾瑞 2024):头部 60%+、中位 35-45%、底部 25%<br>· 学习类 D7 留存:头部 25-35%、中位 10-15%<br>· 学习类 D14:头部 15-25%、中位 5-10%</td></tr>
+<tr><td>推导逻辑</td><td>· D1 50% 是健康线,40% 是 MVP 及格线<br>· D7 25% 处于头部线,因为我们有"学习计划"强制提醒<br>· D14 12% 反映"连续学习核心人群",是验证产品价值的关键指标</td></tr>
+<tr><td>失败信号</td><td>D7 &lt; 15% 说明产品价值不成立</td></tr>
+</table>
+
+<blockquote>
+关于 D1/D7/D14 留存这些数字的具体计算公式、统计口径、行业 benchmark 完整来源,详见《StudyHere 关键信息说明文档》§4。
+</blockquote>
+
+<h3>13.2.4 H4:学练考纠闭环跑通</h3>
+
+<table class="field-table">
+<tr><td>目标指标</td><td>完成首份计划的用户比例 ≥ 25%</td></tr>
+<tr><td>Benchmark 参考</td><td>学习类产品"完成学习路径"用户比例 benchmark 15-30%</td></tr>
+<tr><td>推导逻辑</td><td>25% 处于中等偏上水平,能验证产品价值</td></tr>
+</table>
+
+<h2>13.3 漏斗指标</h2>
+
+<table>
+<tr><th>漏斗阶段</th><th>指标</th><th>目标</th><th>失败信号</th></tr>
+<tr><td>1. 触达</td><td>落地页 UV</td><td>—</td><td>—</td></tr>
+<tr><td>2. 注册</td><td>注册转化率</td><td>≥ 30%</td><td>&lt; 15%</td></tr>
+<tr><td>3. 首次上传</td><td>注册 → 上传</td><td>≥ 50%</td><td>&lt; 30%</td></tr>
+<tr><td>4. 计划生成</td><td>上传 → 计划</td><td>≥ 90%</td><td>&lt; 70%(技术问题)</td></tr>
+<tr><td>5. 首日学习</td><td>计划 → 开始学</td><td>≥ 70%</td><td>&lt; 50%</td></tr>
+<tr><td>6. D1 留存</td><td>第 2 天回来</td><td>≥ 50%</td><td>&lt; 30%</td></tr>
+<tr><td>7. D7 留存</td><td>第 7 天回来</td><td>≥ 25%</td><td>&lt; 15%</td></tr>
+<tr><td>8. D14 留存</td><td>第 14 天回来</td><td>≥ 12%</td><td>&lt; 8%</td></tr>
+<tr><td>9. 完成计划</td><td>完成首份计划</td><td>≥ 25%</td><td>&lt; 15%</td></tr>
+</table>
+
+<h2>13.4 健康度指标</h2>
+
+<table>
+<tr><th>维度</th><th>指标</th><th>目标</th></tr>
+<tr><td>AI 质量</td><td>知识点提炼差评率</td><td>&lt; 15%</td></tr>
+<tr><td>AI 质量</td><td>闪卡差评率</td><td>&lt; 10%</td></tr>
+<tr><td>AI 质量</td><td>选择题差评率</td><td>&lt; 12%</td></tr>
+<tr><td>用户体验</td><td>每日学习完成率</td><td>&gt; 60%</td></tr>
+<tr><td>用户体验</td><td>NPS</td><td>&gt; 30</td></tr>
+<tr><td>技术</td><td>API 响应时间(非 AI)</td><td>&lt; 500ms</td></tr>
+<tr><td>技术</td><td>AI 处理时间</td><td>&lt; 3 分钟</td></tr>
+</table>
+
+<h2>13.5 埋点设计</h2>
+
+<table>
+<tr><th>事件</th><th>触发时机</th><th>关键属性</th></tr>
+<tr><td>user_register</td><td>注册成功</td><td>渠道、时间</td></tr>
+<tr><td>vault_create_start</td><td>开始创建宝库</td><td>资料来源(上传/推荐)</td></tr>
+<tr><td>vault_upload_success</td><td>上传成功</td><td>文件大小、页数</td></tr>
+<tr><td>vault_upload_fail</td><td>上传失败</td><td>失败原因</td></tr>
+<tr><td>ai_precheck_pass</td><td>预检通过</td><td>资料类型</td></tr>
+<tr><td>ai_precheck_fail</td><td>预检不通过</td><td>失败原因</td></tr>
+<tr><td>ai_extract_success</td><td>知识点提炼成功</td><td>知识点数量、耗时</td></tr>
+<tr><td>ai_extract_fail</td><td>知识点提炼失败</td><td>失败原因</td></tr>
+<tr><td>plan_confirm</td><td>计划确认</td><td>总天数、每日时长</td></tr>
+<tr><td>study_start / complete</td><td>学习模块</td><td>当日 N、宝库 ID</td></tr>
+<tr><td>practice_start / complete</td><td>练习模块</td><td>正确率、薄弱点</td></tr>
+<tr><td>exam_complete</td><td>阶段测验</td><td>得分</td></tr>
+<tr><td>wrong_review / clear</td><td>错题处理</td><td>错题数、清除数</td></tr>
+<tr><td>next_step_click</td><td>下一步推荐</td><td>主推荐/备选选择</td></tr>
+<tr><td>daily_complete</td><td>当日完成</td><td>连续天数</td></tr>
+<tr><td>plan_complete</td><td>计划完成</td><td>总用时</td></tr>
+<tr><td>content_feedback</td><td>对 AI 内容反馈</td><td>赞/差、内容类型</td></tr>
+</table>
+
+<!-- ============ 第十四章 ============ -->
+<h1 id="ch14">十四、非功能性需求</h1>
+
+<h2>14.1 性能</h2>
+
+<table>
+<tr><th>项目</th><th>目标</th></tr>
+<tr><td>页面首屏加载</td><td>&lt; 2s</td></tr>
+<tr><td>API 响应(非 AI)</td><td>&lt; 500ms</td></tr>
+<tr><td>AI 资料预检</td><td>&lt; 30s</td></tr>
+<tr><td>AI 知识点提炼</td><td>&lt; 3 分钟(30 页)</td></tr>
+<tr><td>闪卡 / 题目生成</td><td>&lt; 10s</td></tr>
+<tr><td>支持并发</td><td>100 QPS</td></tr>
+</table>
+
+<h2>14.2 可用性</h2>
+
+<ul>
+  <li>服务可用性 &gt; 99%</li>
+  <li>LLM 失败自动重试 1 次</li>
+  <li>LLM 服务挂掉 → 引导推荐资料</li>
+</ul>
+
+<h2>14.3 兼容性</h2>
+
+<table>
+<tr><th>项目</th><th>支持范围</th></tr>
+<tr><td>端</td><td>Web(桌面 + 移动浏览器)</td></tr>
+<tr><td>浏览器</td><td>Chrome / Safari / Edge 最新版</td></tr>
+<tr><td>移动端</td><td>微信浏览器 / Safari iOS / Chrome Android</td></tr>
+</table>
+
+<h2>14.4 安全</h2>
+
+<ul>
+  <li>HTTPS 全站</li>
+  <li>JWT Token 鉴权</li>
+  <li>用户上传资料加密存储</li>
+  <li>不向第三方泄露用户资料</li>
+  <li>GDPR / PIPL 合规(支持数据删除权)</li>
+</ul>
+
+<h2>14.5 数据隐私</h2>
+
+<ul>
+  <li>用户上传资料仅用于该用户的学习</li>
+  <li>不用于训练通用模型</li>
+  <li>用户可随时删除账户 + 所有数据</li>
+</ul>
+
+<!-- ============ 第十五章 ============ -->
+<h1 id="ch15">十五、风险与依赖</h1>
+
+<h2>15.1 技术风险</h2>
+
+<table>
+<tr><th>风险</th><th>概率</th><th>影响</th><th>应对方案</th></tr>
+<tr><td>PDF 解析失败</td><td>30%</td><td>高</td><td>限制 30 页、文字版;扫描版降级到推荐资料</td></tr>
+<tr><td>长文档处理超时</td><td>25%</td><td>高</td><td>分章节异步处理 + 进度提示</td></tr>
+<tr><td>AI 知识点提炼质量差</td><td>35%</td><td>高</td><td>Few-shot + 兜底样本库 + 失败降级</td></tr>
+<tr><td>LLM API 不稳定</td><td>20%</td><td>中</td><td>多模型备选 + 重试机制</td></tr>
+</table>
+
+<h2>15.2 业务风险</h2>
+
+<table>
+<tr><th>风险</th><th>应对</th></tr>
+<tr><td>用户画像广带来的输入不可控</td><td>第十二章的四层兜底机制</td></tr>
+<tr><td>差异化被质疑</td><td>第三章的精准对标 + 闭环定义</td></tr>
+<tr><td>商业模式被质疑</td><td>第五章分阶段商业策略 + 0-1 不做付费墙的产品节奏判断</td></tr>
+</table>
+
+<h2>15.3 外部依赖</h2>
+
+<table>
+<tr><th>依赖</th><th>备份方案</th></tr>
+<tr><td>OpenAI API</td><td>Claude / 通义千问 / DeepSeek</td></tr>
+<tr><td>Supabase</td><td>切换 Firebase</td></tr>
+<tr><td>Vercel</td><td>切换 Netlify</td></tr>
+</table>
+
+<!-- ============ 第十六章 ============ -->
+<h1 id="ch16">十六、Roadmap 与演进路径</h1>
+
+<h2>16.1 版本规划</h2>
+
+<table>
+<tr><th>版本</th><th>核心目标</th><th>关键能力</th></tr>
+<tr>
+<td><span class="priority-p0">v0.1 MVP</span></td>
+<td>验证学练考纠闭环假设</td>
+<td>资料上传 / AI 计划 / 学练考纠 / 评估闭环</td>
+</tr>
+<tr>
+<td><span class="priority-p1">v1.0</span></td>
+<td>提升体验深度</td>
+<td>智能体设置 / 多资料 / 雷达图 / Rubric 评分初版 / AI 对话(基于资料的 RAG)</td>
+</tr>
+<tr>
+<td><span class="priority-p2">v2.0</span></td>
+<td>建立差异化护城河</td>
+<td>RAG / 微调 / 知识图谱 / 证据化诊断 / 长期记忆 / 笔记</td>
+</tr>
+<tr>
+<td><span class="priority-p3">v3.0</span></td>
+<td>商业天花板</td>
+<td>多模态 / Agent / B 端培训 / 国际化 / 社区</td>
+</tr>
+</table>
+
+<blockquote>
+关于"为什么时间区间是这样划分"以及"AI 工具辅助开发下是否能优化",详见《StudyHere 关键信息说明文档》§6。各版本的"启动条件"基于数据驱动而非时间驱动。
+</blockquote>
+
+<h2>16.2 启动下一阶段的数据条件</h2>
+
+<table>
+<tr><th>启动版本</th><th>数据触发条件</th></tr>
+<tr><td>v1.0</td><td>MVP D14 留存 ≥ 8% + 完成首份计划用户 ≥ 15%</td></tr>
+<tr><td>v2.0</td><td>v1.0 月活 ≥ 5000 + 付费意向 ≥ 30%</td></tr>
+<tr><td>v3.0</td><td>v2.0 月活 ≥ 50000 + LTV/CAC &gt; 3</td></tr>
+</table>
+
+<h2>16.3 AI 能力演进路线图</h2>
+
+<div class="mermaid">
+flowchart LR
+    MVP[MVP<br/>━━━━━<br/>• LLM API<br/>• Few-shot<br/>• Structured Output<br/>• 规则混合]
+    V1[v1.0<br/>━━━━━<br/>+ RAG<br/>+ 向量检索<br/>+ 资料溯源<br/>+ 智能体]
+    V2[v2.0<br/>━━━━━<br/>+ 微调小模型<br/>+ 知识图谱<br/>+ 推荐系统<br/>+ SRS 算法]
+    V3[v3.0<br/>━━━━━<br/>+ 多模态<br/>+ Agent<br/>+ 行为模型<br/>+ 个性化模型]
+
+    MVP --> V1 --> V2 --> V3
+
+    style MVP fill:#d4f4dd,stroke:#52c41a
+    style V1 fill:#cfe2ff,stroke:#1a6ee0
+    style V2 fill:#fff3cd,stroke:#faad14
+    style V3 fill:#e7d4f4,stroke:#722ed1
+</div>
+
+<h2>16.4 长期护城河演进</h2>
+
+<table>
+<tr><th>阶段</th><th>护城河</th><th>说明</th></tr>
+<tr><td>MVP</td><td>无</td><td>0-1 阶段不指望护城河</td></tr>
+<tr><td>1.0</td><td>用户数据</td><td>学习历史 + 偏好数据沉淀</td></tr>
+<tr><td>2.0</td><td>垂直模型 + 知识图谱</td><td>微调小模型 + 自有知识结构</td></tr>
+<tr><td>3.0</td><td>行为数据 + 品牌效果</td><td>"学习效果"作为品牌资产</td></tr>
+</table>
+
+<hr>
+
+<p style="text-align: center; color: #86909c; font-size: 13px;">
+StudyHere · 帮你掌握任何知识和技能的 AI 学习闭环平台<br>
+本文档为 MVP 阶段产品需求文档(PRD)· v2.0 · 2026-05-21<br>
+配套阅读:《StudyHere 关键信息说明文档》(含信息源、商业模式 B 端详解、Q&A、Demo 脚本、待办、面试加分点等团队内部资料)
+</p>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    flowchart: { curve: 'basis', padding: 20, useMaxWidth: true, htmlLabels: true },
+    sequence: { showSequenceNumbers: true },
+    securityLevel: 'loose'
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyHere 团队协作指南 v2.0</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root{--a:#6366f1;--b:#0ea5e9;--c:#10b981;--d:#f59e0b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Hiragino Sans GB',sans-serif;background:#f1f5f9;color:#1e293b;font-size:15px;}
+.tab-bar{display:flex;background:#0f172a;padding:12px 20px 0;gap:4px;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.tab-btn{padding:10px 18px;border-radius:8px 8px 0 0;border:none;cursor:pointer;font-size:14px;font-weight:700;background:#1e293b;color:#64748b;transition:all .2s;}
+.tab-btn:hover{color:#e2e8f0;}
+.tab-btn.act-ov{background:#334155;color:#f8fafc;}
+.tab-btn.act-a{background:var(--a);color:#fff;}
+.tab-btn.act-b{background:var(--b);color:#fff;}
+.tab-btn.act-c{background:var(--c);color:#fff;}
+.tab-btn.act-d{background:var(--d);color:#fff;}
+.tab-pane{display:none;padding:24px;max-width:900px;margin:0 auto;}
+.tab-pane.visible{display:block;}
+/* overview */
+.hero{background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;border-radius:16px;padding:32px;margin-bottom:24px;}
+.hero h1{font-size:26px;margin-bottom:8px;}
+.hero p{color:#94a3b8;line-height:1.7;}
+.hero .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.hero .tag{background:rgba(255,255,255,.1);border-radius:20px;padding:4px 14px;font-size:12px;color:#cbd5e1;}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;}
+@media(max-width:640px){.role-grid{grid-template-columns:1fr;}}
+.rc{border-radius:12px;padding:18px;border:2px solid;}
+.rc-a{border-color:var(--a);background:#eef2ff;}.rc-b{border-color:var(--b);background:#f0f9ff;}
+.rc-c{border-color:var(--c);background:#ecfdf5;}.rc-d{border-color:var(--d);background:#fffbeb;}
+.rc .badge{display:inline-block;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;color:#fff;margin-bottom:8px;}
+.rc-a .badge{background:var(--a);}.rc-b .badge{background:var(--b);}
+.rc-c .badge{background:var(--c);}.rc-d .badge{background:var(--d);}
+.rc h3{font-size:16px;margin-bottom:6px;}
+.rc-a h3{color:var(--a);}.rc-b h3{color:var(--b);}.rc-c h3{color:var(--c);}.rc-d h3{color:var(--d);}
+.rc p{font-size:13px;color:#475569;line-height:1.6;}
+.card{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:14px;overflow:hidden;}
+.card-head{display:flex;align-items:center;gap:10px;padding:16px 18px;cursor:pointer;user-select:none;}
+.card-head::-webkit-details-marker{display:none;}
+.cnum{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;color:#fff;flex-shrink:0;}
+.num-a{background:var(--a);}.num-b{background:var(--b);}.num-c{background:var(--c);}.num-d{background:var(--d);}
+.ctitle{flex:1;font-size:15px;font-weight:600;}
+.ctime{font-size:12px;color:#94a3b8;}
+details[open] .card-head{background:#f8fafc;}
+.card-body{padding:16px 18px 18px;border-top:1px solid #f1f5f9;}
+.sec{margin-top:14px;}
+.sec-label{font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.sec-body{font-size:14px;line-height:1.75;color:#334155;}
+.sec-body ol{padding-left:18px;}.sec-body li{margin-bottom:6px;}
+.prompt-box{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.7;margin:8px 0;white-space:pre-wrap;font-family:Menlo,Monaco,'Courier New',monospace;}
+.prompt-label{font-size:11px;color:#64748b;margin-bottom:4px;font-weight:600;}
+.dep{background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;font-size:13px;color:#9a3412;}
+.verify{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:13px;color:#166534;}
+.notify{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:13px;color:#1e40af;margin-top:8px;}
+.notify b{display:block;margin-bottom:4px;}
+.sprint-hdr{display:flex;align-items:center;gap:12px;margin:28px 0 14px;}
+.sp-badge{padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;}
+.sp-a{background:var(--a);}.sp-b{background:var(--b);}.sp-c{background:var(--c);}.sp-d{background:var(--d);}
+.sp-title{font-size:17px;font-weight:700;}.sp-date{font-size:12px;color:#64748b;}
+.sec-title{font-size:18px;font-weight:700;margin:24px 0 14px;color:#0f172a;}
+.mwrap{background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:20px;overflow-x:auto;}
+.rules{background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:20px;margin-bottom:20px;}
+.rules h3{color:#92400e;margin-bottom:10px;font-size:15px;}
+.rules ol{padding-left:18px;}.rules li{margin-bottom:7px;font-size:14px;line-height:1.6;}
+.chk{accent-color:var(--a);width:15px;height:15px;cursor:pointer;flex-shrink:0;}
+.prog-wrap{position:fixed;bottom:20px;right:20px;background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:180px;z-index:200;}
+.prog-lbl{font-size:11px;color:#64748b;margin-bottom:6px;}
+.prog-track{height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--a),var(--b));border-radius:4px;transition:width .3s;}
+.prog-cnt{font-size:11px;color:#94a3b8;margin-top:4px;text-align:right;}
+</style>
+</head>
+<body>
+
+<div class="tab-bar">
+  <button class="tab-btn act-ov" data-tab="overview" onclick="showTab('overview')">🗺 总览</button>
+  <button class="tab-btn" data-tab="A" onclick="showTab('A')">🔧 人员A（架构师）</button>
+  <button class="tab-btn" data-tab="B" onclick="showTab('B')">🖥 人员B（前端）</button>
+  <button class="tab-btn" data-tab="C" onclick="showTab('C')">🤖 人员C（AI）</button>
+  <button class="tab-btn" data-tab="D" onclick="showTab('D')">🗄 人员D（后端）</button>
+</div>
+
+<div class="tab-pane visible" id="pane-overview">
+<div class="hero">
+  <h1>📚 StudyHere 团队协作指南</h1>
+  <p>AI 驱动的学习闭环平台 · 4人团队 · 零代码基础 · 用AI写代码<br>
+  本指南告诉你：<strong style="color:#fff">自己负责什么、先等谁、怎么做、做完通知谁</strong>。</p>
+  <div class="tags">
+    <span class="tag">🗓 5月22日 — 6月22日</span>
+    <span class="tag">🤖 Claude Code + Cursor</span>
+    <span class="tag">5 个 Sprint</span>
+    <span class="tag">GitHub 协同</span>
+  </div>
+</div>
+
+<div class="sec-title">👥 四人分工一览</div>
+<div class="role-grid">
+  <div class="rc rc-a">
+    <span class="badge">人员 A</span>
+    <h3>架构师 / 项目负责人</h3>
+    <p>负责搭建整个项目骨架、数据库、部署平台，是其他3人的"地基"。其他人必须等A完成基础搭建后才能开始。</p>
+  </div>
+  <div class="rc rc-b">
+    <span class="badge">人员 B</span>
+    <h3>前端工程师</h3>
+    <p>负责所有用户看得见、能点击的页面。从登录页到练习页，用AI把设计变成实际网页。</p>
+  </div>
+  <div class="rc rc-c">
+    <span class="badge">人员 C</span>
+    <h3>AI 工程师</h3>
+    <p>负责让平台"变聪明"——上传文件后自动解析、AI生成学习计划、自动出题、智能分析错题。</p>
+  </div>
+  <div class="rc rc-d">
+    <span class="badge">人员 D</span>
+    <h3>后端工程师</h3>
+    <p>负责数据库和接口——用户注册/登录、文件存储、数据读取都靠D来实现。是B和C功能的"管道"。</p>
+  </div>
+</div>
+
+<div class="sec-title">📅 开发时间线</div>
+<div class="mwrap">
+  <div class="mermaid">
+gantt
+  title StudyHere 开发时间线
+  dateFormat YYYY-MM-DD
+  section 人员A（架构师）
+  Sprint0 基础架构搭建 :a0,2026-05-22,4d
+  Sprint1 部署环境配置 :a1,2026-05-26,6d
+  Sprint4 上线检查     :a4,2026-06-16,7d
+  section 人员B（前端）
+  等待基础搭建完成    :b_wait,2026-05-22,4d
+  Sprint1 登录注册页  :b1,2026-05-26,6d
+  Sprint2 上传计划页  :b2,2026-06-01,7d
+  Sprint3 练习错题页  :b3,2026-06-08,8d
+  Sprint4 美化优化    :b4,2026-06-16,7d
+  section 人员C（AI工程师）
+  等待基础搭建完成       :c_wait,2026-05-22,4d
+  Sprint1 配置AI接口     :c1,2026-05-26,6d
+  Sprint2 文件解析+计划生成 :c2,2026-06-01,7d
+  Sprint3 闪卡+题目+分析  :c3,2026-06-08,8d
+  Sprint4 提示词优化      :c4,2026-06-16,7d
+  section 人员D（后端）
+  Sprint0 数据库设计     :d0,2026-05-22,4d
+  Sprint1 用户认证接口   :d1,2026-05-26,6d
+  Sprint2 文件处理接口   :d2,2026-06-01,7d
+  Sprint3 学习练习接口   :d3,2026-06-08,8d
+  Sprint4 测试优化       :d4,2026-06-16,7d
+  </div>
+</div>
+
+<div class="sec-title">🔀 协作交接流程图</div>
+<div class="mwrap">
+  <div class="mermaid">
+flowchart TD
+  S0A["🔧 A：搭建项目骨架<br/>（第1-4天）"]
+  S0D["🗄️ D：设计数据库<br/>（第1-4天）"]
+  S0A --> S1B["🖥️ B：开始写页面<br/>（第5天起）"]
+  S0A --> S1C["🤖 C：配置AI接口<br/>（第5天起）"]
+  S0A --> S1D["🔗 D：写用户认证接口<br/>（第5天起）"]
+  S0D --> S1D
+  S1D -- "登录接口完成
+通知B" --> S1B
+  S1D --> S2D["📁 D：文件上传接口"]
+  S1C --> S2C["📄 C：文件解析+AI计划生成"]
+  S1B --> S2B["📋 B：上传页+计划展示页"]
+  S2D -- "上传接口完成
+通知C+B" --> S2C
+  S2D --> S2B
+  S2C -- "AI功能完成
+通知D+B" --> S2B
+  S2C --> S3C["🃏 C：闪卡+题目+错题分析"]
+  S2D --> S3D["📝 D：练习题接口"]
+  S2B --> S3B["✏️ B：练习页+错题页"]
+  S3D -- "接口完成
+通知C+B" --> S3C
+  S3D --> S3B
+  S3C -- "AI功能完成
+通知B" --> S3B
+  S3B --> FINAL["🚀 全员：测试+修Bug+上线"]
+  S3C --> FINAL
+  S3D --> FINAL
+  style S0A fill:#6366f1,color:#fff
+  style S1B fill:#0ea5e9,color:#fff
+  style S2B fill:#0ea5e9,color:#fff
+  style S3B fill:#0ea5e9,color:#fff
+  style S1C fill:#10b981,color:#fff
+  style S2C fill:#10b981,color:#fff
+  style S3C fill:#10b981,color:#fff
+  style S0D fill:#f59e0b,color:#fff
+  style S1D fill:#f59e0b,color:#fff
+  style S2D fill:#f59e0b,color:#fff
+  style S3D fill:#f59e0b,color:#fff
+  style FINAL fill:#0f172a,color:#fff
+  </div>
+</div>
+
+<div class="rules">
+  <h3>📌 团队协作5条铁律</h3>
+  <ol>
+    <li><strong>每个人完成一项任务后，必须在群里发通知</strong>（每个任务末尾有固定通知模板，直接复制发送）。</li>
+    <li><strong>等前置任务通知，再开始自己的任务</strong>（任务里会写"等谁通知你才能开始"）。</li>
+    <li><strong>遇到报错不要慌</strong>，把报错截图+Claude Code的回复原文 发到群里，让A来判断。</li>
+    <li><strong>所有代码改动先提交到自己的分支</strong>，不要直接修改 main 分支（Claude Code会帮你做这件事）。</li>
+    <li><strong>每天下班前把当天进度（做完了哪几项）发到群里</strong>，对齐进度。</li>
+  </ol>
+</div>
+</div>
+
+<div class="tab-pane" id="pane-A">
+  <div class="hero" style="background:linear-gradient(135deg,#312e81,#4338ca);">
+    <h1>🔧 人员A · 架构师 / 项目负责人</h1>
+    <p>你是整个团队的「地基」和「协调者」。你负责搭建所有人共用的基础设施，其他人必须等你的基础搭好后才能开始工作。<br>
+    你使用的工具：Claude Code、GitHub、Vercel、Railway、Supabase。</p>
+  </div>
+  
+<div class="sprint-hdr">
+  <span class="sp-badge sp-a">Sprint 0</span>
+  <span class="sp-title">基础架构搭建</span>
+  <span class="sp-date">5月22日—5月25日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-a">A-001</span>
+      <span class="ctitle">在 GitHub 创建项目仓库</span>
+      <span class="ctime">约30分钟</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">在 GitHub 上建立一个空仓库，作为全队代码的统一存放地。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">无需等待，第一个开始做。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>打开浏览器，访问 <strong>github.com</strong>，用你的账号登录</li><li>点击右上角头像旁的「+」号，选「New repository」</li><li>仓库名（Repository name）填写：<strong>StudyHere</strong></li><li>描述（Description）填写：AI驱动的学习闭环平台</li><li>选择「<strong>Private</strong>」（私有仓库）</li><li>勾选「Add a README file」</li><li>点击绿色的「Create repository」按钮</li><li>仓库创建成功后，页面地址形如 https://github.com/你的用户名/StudyHere —— <strong>把这个地址复制保存好</strong></li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">浏览器打开仓库地址，能看到页面，里面有 README.md 文件。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【A-001 完成✅】GitHub 仓库已创建：https://github.com/你的用户名/StudyHere
+请B、C、D 点开链接，点「Watch」关注仓库，之后我会把你们加为协作者。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-a">A-002</span>
+      <span class="ctitle">搭建项目骨架（用 Claude Code）</span>
+      <span class="ctime">约2小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">用 Claude Code（AI编程助手）一键搭建前后端项目的文件夹结构，这相当于给房子打好地基——后续所有人的代码都往这个结构里填。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">A-001 完成后即可开始。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>打开你电脑上的 <strong>Claude Code</strong>（若未安装，在终端运行：<code>npm install -g @anthropic-ai/claude-code</code>，然后运行 <code>claude</code>）</li><li>在 Claude Code 对话框中，把下面这段话 <strong>完整复制粘贴</strong> 进去，然后按回车：</li><li><div class="prompt-label">📋 复制给 Claude Code 的指令：</div><div class="prompt-box">请帮我搭建一个叫 StudyHere 的全栈项目。具体要求：
+
+1. 使用 Turborepo + pnpm workspaces 的 monorepo 结构
+2. 创建 apps/web 子项目：Next.js 14 App Router + TypeScript + Tailwind CSS
+3. 创建 apps/api 子项目：Hono.js + TypeScript + Node.js
+4. apps/web 安装依赖：zustand @tanstack/react-query axios shadcn/ui
+5. apps/api 安装依赖：prisma @prisma/client bullmq zod ioredis
+6. 在项目根目录创建 .env.example 文件，列出所有需要填写的环境变量名
+7. 初始化 git，并把代码推送到这个仓库：[把A-001的仓库地址填在这里]
+
+请一步步执行，每步完成后告诉我结果。</div></li><li>等 Claude Code 执行完毕（大约10-20分钟），它会告诉你每一步的结果</li><li>如果它问你是否确认某个操作，回复「是，继续」</li><li>完成后，打开你的 GitHub 仓库页面，刷新，检查是否出现了 apps、packages 等文件夹</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">GitHub 仓库里能看到 apps/web 和 apps/api 两个文件夹，根目录有 .env.example 文件。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【A-002 完成✅】项目骨架已搭好并推送到 GitHub！
+B、C、D 请打开仓库查看：https://github.com/你的用户名/StudyHere
+下一步我去配置 Supabase 数据库。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-a">A-003</span>
+      <span class="ctitle">配置 Supabase 云数据库</span>
+      <span class="ctime">约1小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">Supabase 是存放所有用户数据的云数据库。这一步注册账号、建立数据库，并把连接信息给到 D（后端）。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">A-002 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>打开浏览器，访问 <strong>supabase.com</strong>，点「Start your project」注册账号（可用 GitHub 账号一键登录）</li><li>进入控制台后，点「New project」</li><li>填写：项目名 <strong>StudyHere</strong>，数据库密码设一个强密码（必须记住！），区域选 <strong>Southeast Asia (Singapore)</strong></li><li>点「Create new project」，等待约2分钟（页面会显示进度条）</li><li>项目创建完成后，点左侧菜单「Settings」→「API」</li><li>找到「<strong>Project URL</strong>」和「<strong>anon public</strong>」这两个值，各自点旁边的复制按钮，粘贴到记事本保存</li><li>再找到「<strong>service_role</strong>」的值，同样复制保存（这个要保密，不能公开）</li><li>把 Project URL 和 anon public key 私信发给 D</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">Supabase 控制台能打开，Project URL 和两个 key 都已复制保存。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【A-003 完成✅】Supabase 数据库已配好！
+D：我已经把 URL 和 key 私信给你了，你可以开始做 D-001 数据库设计了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-a">A-004</span>
+      <span class="ctitle">给团队成员分配 GitHub 仓库权限</span>
+      <span class="ctime">约20分钟</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">让B、C、D 能把代码推送到仓库，每人在自己的分支上工作互不干扰。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">A-001 完成，且 B、C、D 都告诉你他们的 GitHub 用户名后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>打开 GitHub 仓库页面，点上方「Settings」选项卡</li><li>左侧点「Collaborators」</li><li>点绿色「Add people」按钮</li><li>依次输入 B、C、D 的 GitHub 用户名，角色选「<strong>Write</strong>」，点「Add」</li><li>他们会收到邮件邀请，让他们点邮件里的链接接受邀请</li><li>打开 Claude Code，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Claude Code 的指令：</div><div class="prompt-box">请在我们的 StudyHere 项目的 GitHub 仓库中，帮每个团队成员创建对应的开发分支：
+- feature/frontend（给B用）
+- feature/ai（给C用）
+- feature/backend（给D用）
+
+仓库地址：[填你的仓库地址]</div></li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">GitHub 仓库 Settings → Collaborators 页面能看到 B、C、D 三人的名字，状态是 Accepted。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【A-004 完成✅】B、C、D 的仓库权限已开通！
+请大家检查邮箱，接受 GitHub 邀请。
+各自的分支：B → feature/frontend，C → feature/ai，D → feature/backend
+明天我继续做部署配置，大家可以按照各自任务手册开始了！</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-a">Sprint 1</span>
+  <span class="sp-title">配置部署环境</span>
+  <span class="sp-date">5月26日—5月31日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-a">A-005</span>
+      <span class="ctitle">将前端部署到 Vercel</span>
+      <span class="ctime">约1.5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">Vercel 是前端的托管平台，配置后每次 B 提交代码就会自动更新网站，不需要手动操作。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">A-002 完成（项目骨架在 GitHub 上存在）后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>打开浏览器，访问 <strong>vercel.com</strong>，用 GitHub 账号登录</li><li>点「Add New → Project」</li><li>找到 <strong>StudyHere</strong> 仓库，点「Import」</li><li>框架（Framework Preset）选「<strong>Next.js</strong>」</li><li>根目录（Root Directory）填写：<strong>apps/web</strong></li><li>暂时不填环境变量，点「Deploy」先部署一次</li><li>等待约3分钟，部署完成后 Vercel 会给你一个网址（形如 studyhere-xxx.vercel.app）</li><li>把这个网址发给全队</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">在浏览器打开 Vercel 给的网址，能看到 Next.js 的默认欢迎页面（有旋转的 logo）。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【A-005 完成✅】前端已部署到 Vercel！
+访问地址：https://studyhere-xxx.vercel.app
+B：你之后提交代码到 feature/frontend 分支，我合并到 main 后网站会自动更新。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-a">A-006</span>
+      <span class="ctitle">将后端部署到 Railway</span>
+      <span class="ctime">约1.5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">Railway 是后端的托管平台，D 写的所有接口都跑在这里。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">A-002 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>打开浏览器，访问 <strong>railway.app</strong>，用 GitHub 账号登录</li><li>点「New Project → Deploy from GitHub repo」</li><li>选择 StudyHere 仓库</li><li>Railway 会自动检测到 apps/api，点「Deploy」</li><li>部署完成后，点「Settings → Networking」→「Generate Domain」，生成一个公网地址（形如 studyhere-api.railway.app）</li><li>打开 Claude Code，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Claude Code 的指令：</div><div class="prompt-box">请帮我在 Railway 部署的后端项目里，配置以下环境变量（在 Railway 控制台 Variables 页面填写）：
+DATABASE_URL=（D会提供Supabase连接字符串）
+JWT_SECRET=（帮我生成一个随机的64位字符串）
+FRONTEND_URL=https://studyhere-xxx.vercel.app（把我的Vercel地址填进来）
+
+请告诉我每个变量填什么值。</div></li><li>按 Claude Code 的指引，在 Railway 控制台的「Variables」页面逐一填入环境变量</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">在浏览器访问 Railway 给的域名/health（如 https://studyhere-api.railway.app/health），返回 {"status":"ok"} 表示正常。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【A-006 完成✅】后端已部署到 Railway！
+API 地址：https://studyhere-api.railway.app
+D：你写的接口会自动部署到这里，联调时用这个地址。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-a">A-007</span>
+      <span class="ctitle">统一管理环境变量</span>
+      <span class="ctime">约1小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">把所有密钥（数据库密码、AI接口密钥等）集中管理，确保前后端都能正确读取，同时不把这些密钥暴露在代码里。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">A-005、A-006 均完成，且 D 已提供 Supabase 连接字符串后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>汇总向所有人收集以下信息：Supabase URL（A-003已有）、Supabase 密钥（A-003已有）、OpenAI API Key（C提供）、Railway API 地址（A-006已有）</li><li>打开 Claude Code，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Claude Code 的指令：</div><div class="prompt-box">请帮我完成 StudyHere 项目的环境变量配置：
+
+1. 更新项目根目录的 .env.example，确保包含所有需要的变量名（但不含真实值）
+2. 在 Vercel 控制台配置 apps/web 需要的环境变量：
+   - NEXT_PUBLIC_API_URL=https://studyhere-api.railway.app
+   - NEXT_PUBLIC_SUPABASE_URL=[Supabase URL]
+   - NEXT_PUBLIC_SUPABASE_ANON_KEY=[Supabase anon key]
+3. 在 Railway 控制台配置 apps/api 需要的环境变量：
+   - DATABASE_URL=[Supabase连接字符串，D会提供]
+   - SUPABASE_SERVICE_KEY=[Supabase service key]
+   - OPENAI_API_KEY=[C提供的OpenAI key]
+   - JWT_SECRET=[随机生成的64位字符串]
+
+请一步步指引我在哪里填这些值。</div></li><li>按照 Claude Code 的指引，逐一在 Vercel 和 Railway 控制台填写环境变量</li><li>填完后在两个平台都点「Redeploy」重新部署</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">访问前端网址和后端/health，两个都能正常打开，没有报错。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【A-007 完成✅】环境变量配置完毕！
+全队：前端、后端都已配置好各自的密钥，大家可以开始联调测试了。
+遇到"环境变量未找到"的报错，找我。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-a">Sprint 4</span>
+  <span class="sp-title">上线前检查与发布</span>
+  <span class="sp-date">6月16日—6月22日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-a">A-008</span>
+      <span class="ctitle">全功能测试与 Bug 收集</span>
+      <span class="ctime">约1天</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">在正式向用户开放前，系统地测试每一个功能，发现问题统一分配给对应的人修复。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">B、C、D 的所有任务基本完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>创建一个测试账号，按照用户使用流程逐一测试：注册→登录→上传文件→等待AI处理→查看学习计划→做闪卡→做题目→查看错题</li><li>把发现的每个问题记录在一个文档里，格式：【问题描述】+【截图】+【属于谁负责的功能】</li><li>打开 Claude Code，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Claude Code 的指令：</div><div class="prompt-box">请帮我检查 StudyHere 项目的上线准备情况，逐一检查：
+1. 前端所有页面是否有控制台报错
+2. 后端所有 API 接口是否响应正常
+3. 数据库连接是否稳定
+4. 文件上传功能是否正常（试上传一个PDF）
+5. AI 生成功能是否正常（看返回结果是否有内容）
+6. 是否有任何明显的安全问题（如密钥暴露在前端）
+
+请生成一份检查报告。</div></li><li>把报告和测试中发现的 Bug 整理后发到群里，分配给 B/C/D 修复</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">测试文档列出了所有发现的问题，并已分配给对应责任人。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【A-008 完成✅】全功能测试报告已发到群里！
+B：请修复前端相关问题
+C：请修复AI相关问题
+D：请修复后端接口相关问题
+目标：本周五（6月19日）前全部修复完毕。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-a">A-009</span>
+      <span class="ctitle">正式上线</span>
+      <span class="ctime">约2小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">把网站从开发状态切换到正式对外状态：绑定正式域名（如有）、关闭调试模式、发布正式版本。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">A-008 中的所有 Bug 修复完毕后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>确认 B、C、D 都已完成各自的 Bug 修复并提交代码</li><li>打开 Claude Code，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Claude Code 的指令：</div><div class="prompt-box">StudyHere 项目准备正式上线，请帮我完成以下最终配置：
+
+1. 将前端的 NODE_ENV 环境变量设为 production
+2. 检查并关闭所有调试日志（console.log等）
+3. 在 Vercel 配置中开启「Production」部署
+4. 生成最终的 apps/web 生产构建，确认没有构建错误
+5. 检查后端 Railway 部署日志，确认没有异常错误
+
+请逐步指引我完成。</div></li><li>按照 Claude Code 指引完成配置</li><li>最后做一次完整的用户流程测试（注册→上传→学习→练习），确认一切正常</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">前端 Vercel 和后端 Railway 都显示「Production」状态，完整用户流程测试通过，没有报错。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【A-009 完成✅🎉】StudyHere 正式上线！
+访问地址：https://studyhere-xxx.vercel.app
+全队辛苦了！请大家把这个链接分享给第一批用户体验。</div>
+      </div>
+    </div>
+  </details>
+</div>
+</div>
+
+<div class="tab-pane" id="pane-B">
+  <div class="hero" style="background:linear-gradient(135deg,#075985,#0284c7);">
+    <h1>🖥 人员B · 前端工程师</h1>
+    <p>你负责所有用户能看见的页面。你的工作让平台变得好看、好用。<br>
+    你使用的工具：Cursor（AI编程）、浏览器预览。等A搭好骨架后开始，每完成一个页面就截图发给大家看。</p>
+  </div>
+  
+<div class="sprint-hdr">
+  <span class="sp-badge sp-b">Sprint 1</span>
+  <span class="sp-title">登录与注册页面</span>
+  <span class="sp-date">5月26日—5月31日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-b">B-001</span>
+      <span class="ctitle">制作登录页面</span>
+      <span class="ctime">约4小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">做一个用户登录的页面：输入邮箱和验证码后点登录，登录成功进入主页。页面要美观简洁，手机电脑都能正常显示。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">等 A 发出「A-002 完成」的通知，说明项目骨架已建好，你才能开始。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在电脑上打开 <strong>Cursor</strong>（AI编程工具），用它打开 StudyHere 项目文件夹里的 apps/web 文件夹</li><li>在 Cursor 的 AI 对话框中（按 Cmd+L 打开），把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/web/app/(auth)/login/page.tsx 创建登录页面。
+
+页面要求：
+- 使用 shadcn/ui 组件库
+- 页面中央显示 StudyHere Logo文字和标语
+- 一个邮箱输入框（label写"邮箱"）
+- 一个验证码输入框（label写"验证码"，旁边有"获取验证码"按钮）
+- 一个蓝色的"登录"按钮（全宽）
+- 底部有"还没有账号？立即注册"链接
+- 整体风格：简洁白色背景，类似 Notion 的风格
+- 响应式设计，手机和电脑都要好看
+
+请生成完整的 TypeScript 代码。</div></li><li>Cursor 生成代码后，点「Apply」应用到文件</li><li>在终端（Cursor 内置，点底部「Terminal」）运行：<code>cd apps/web && pnpm dev</code></li><li>浏览器打开 <strong>http://localhost:3000/login</strong> 查看效果</li><li>如果有地方不满意（颜色、布局等），在 Cursor 里继续说：「把按钮颜色改成深蓝色」「把 Logo 字体变大」等，让它修改</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">浏览器打开 http://localhost:3000/login 能看到完整的登录页面，邮箱输入框、验证码输入框、登录按钮都在，手机模式下（浏览器按F12→手机图标）也显示正常。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【B-001 完成✅】登录页面已完成！
+截图发到群里供大家查看效果。
+D：我这边登录页做好了，等你的登录接口完成后我来对接。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-b">B-002</span>
+      <span class="ctitle">制作注册页面</span>
+      <span class="ctime">约3小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">做一个新用户注册的页面：填邮箱→获取验证码→设置密码→完成注册。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">B-001 完成后继续，无需等其他人。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor 的 AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/web/app/(auth)/register/page.tsx 创建注册页面。
+
+页面要求：
+- 使用 shadcn/ui 组件库
+- 与登录页面风格一致
+- 字段：邮箱输入框、验证码输入框（旁边有"获取验证码"按钮）、密码输入框、确认密码输入框
+- 一个蓝色"立即注册"按钮（全宽）
+- 底部"已有账号？去登录"链接，点击跳转到 /login
+- 表单验证：邮箱格式验证、两次密码必须一致、验证码必须是6位数字
+
+请生成完整的 TypeScript 代码。</div></li><li>Cursor 生成后点「Apply」，在浏览器打开 http://localhost:3000/register 查看</li><li>测试一下表单验证：填一个不合格的邮箱，看看是否有错误提示</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">浏览器打开 /register 能看到完整注册表单，填错误邮箱格式时有红色提示，两次密码不一致时有提示。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【B-002 完成✅】注册页面已完成！截图发群里。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-b">B-003</span>
+      <span class="ctitle">制作主页导航框架</span>
+      <span class="ctime">约3小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">登录后的主界面：左侧导航栏（可收起）、右侧内容区，这是整个应用的骨架，后续所有功能页都放在这个框架里。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">B-001 完成后可以进行，无需等其他人。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor 的 AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/web/app/(dashboard)/layout.tsx 创建登录后的主布局。
+
+要求：
+- 左侧固定导航栏，宽度240px，深色背景（#1e293b）
+- 导航项目：🏠 首页、📁 我的资料库、📚 学习计划、🃏 闪卡练习、📝 题目练习、❌ 错题本
+- 导航栏顶部显示 StudyHere Logo
+- 导航栏底部显示用户头像和名字（先用占位符）
+- 右侧内容区白色背景，有padding
+- 顶部有面包屑导航
+- 响应式：手机上导航栏变成底部Tab栏
+- 使用 shadcn/ui 和 Tailwind CSS
+
+请生成完整代码。</div></li><li>应用后在浏览器打开 http://localhost:3000/dashboard 查看效果</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">能看到左侧深色导航栏，右侧白色内容区，点击导航项目会切换页面。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【B-003 完成✅】主页导航框架完成！后续所有页面都会在这个框架里展示。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-b">Sprint 2</span>
+  <span class="sp-title">文件上传与学习计划页</span>
+  <span class="sp-date">6月1日—6月7日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-b">B-004</span>
+      <span class="ctitle">制作文件上传页面</span>
+      <span class="ctime">约4小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">做一个拖拽上传文件的页面：支持上传 PDF 和 Word 文档，上传后显示进度，完成后跳转到学习计划页。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">等 D 发出「D-006 文件上传接口完成」的通知后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor 的 AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/web/app/(dashboard)/upload/page.tsx 创建文件上传页面。
+
+要求：
+- 大面积的拖拽上传区域（虚线边框，中间有云朵上传图标和提示文字）
+- 支持点击选择文件
+- 只接受 PDF 和 Word 文档（.pdf, .doc, .docx）
+- 文件大小限制：50MB
+- 上传后显示：文件名、文件大小、上传进度条（蓝色进度条）
+- 上传完成后显示"正在分析中..."的加载动画
+- 上传API地址是：POST /api/vault/upload（后端提供）
+- 错误处理：文件类型不对时提示"只支持PDF和Word文档"
+- 使用 shadcn/ui 组件和 Tailwind CSS
+
+请生成完整代码，包含上传逻辑。</div></li><li>应用后在浏览器测试拖拽效果（可以先拖进去一个文件，看看进度条是否出现）</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">能拖拽或点击上传 PDF 文件，页面显示进度条。上传 txt 文件时提示错误。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【B-004 完成✅】文件上传页面完成！
+C：上传页已就绪，等你的 AI 处理功能接入。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-b">B-005</span>
+      <span class="ctitle">制作学习计划展示页</span>
+      <span class="ctime">约5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">AI分析完文件后，把生成的学习计划漂亮地展示出来：按天/周分组的学习安排，用户可以看到每天学什么。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">等 C 发出「C-005 AI学习计划生成完成」的通知，且 D 发出「D-008 学习计划接口完成」的通知后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor 的 AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/web/app/(dashboard)/plan/[id]/page.tsx 创建学习计划展示页。
+
+数据结构（从后端 GET /api/plan/:id 获取）：
+{
+  title: string,  // 计划名称
+  totalDays: number,  // 总天数
+  days: Array<{
+    day: number,  // 第几天
+    date: string,  // 日期
+    topics: string[],  // 今日主题
+    goals: string[],  // 今日目标
+    estimatedMinutes: number  // 预计时长
+  }>
+}
+
+页面要求：
+- 顶部显示计划名称、总天数、总预计时长
+- 一个进度环形图（显示已完成/总天数）
+- 每天一个卡片，卡片内显示日期、主题标签、目标列表
+- 已完成的天用绿色✅标记，今天用蓝色高亮
+- 点击某一天的卡片可以展开详情
+- 底部有"开始今日练习"按钮
+
+请用 shadcn/ui 和 Tailwind CSS 生成完整代码，数据用模拟数据先展示效果。</div></li><li>查看效果，根据视觉调整颜色和布局</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">打开页面能看到按天列出的学习计划卡片，有进度环，点击卡片能展开。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【B-005 完成✅】学习计划展示页完成！</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-b">Sprint 3</span>
+  <span class="sp-title">练习与错题功能页</span>
+  <span class="sp-date">6月8日—6月15日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-b">B-006</span>
+      <span class="ctitle">制作闪卡练习页面</span>
+      <span class="ctime">约5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">翻转卡片式的记忆练习：正面显示问题，用户点击翻转看答案，然后选择「记住了」或「再复习」。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">等 C 发出「C-006 闪卡生成功能完成」，且 D 发出「D-009 练习接口完成」的通知后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor 的 AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/web/app/(dashboard)/flashcard/page.tsx 创建闪卡练习页面。
+
+数据结构（从后端 GET /api/flashcard?planId=xxx 获取）：
+{
+  cards: Array<{
+    id: string,
+    front: string,  // 正面内容（知识点/问题）
+    back: string,   // 背面内容（答案/解释）
+    mastery: number  // 掌握程度 0-5
+  }>
+}
+
+页面要求：
+- 卡片居中显示，占屏幕主要区域
+- 卡片翻转动画（3D翻转效果）
+- 正面：白色背景，显示知识点
+- 背面：浅蓝色背景，显示解释
+- 底部两个按钮：🔄 再看一遍（红色）、✅ 记住了（绿色）
+- 顶部进度条：已复习X张/共X张
+- 所有卡片复习完后显示总结页面
+- 用模拟数据先做好效果
+
+请生成完整代码，包含翻转动画的 CSS。</div></li><li>测试翻转动画是否流畅，检查移动端显示效果</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">打开页面能看到翻转卡片，点击有动画，底部两个按钮可以点击。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【B-006 完成✅】闪卡练习页面完成！截图发群里。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-b">B-007</span>
+      <span class="ctitle">制作题目练习页面</span>
+      <span class="ctime">约5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">选择题练习界面：显示题目和4个选项，选完后立即显示对错和解析，所有题目做完后显示得分。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">等 C 发出「C-007 题目生成功能完成」，且 D 发出「D-009 练习接口完成」的通知后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor 的 AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/web/app/(dashboard)/quiz/page.tsx 创建题目练习页面。
+
+数据结构（从后端 GET /api/question?planId=xxx 获取）：
+{
+  questions: Array<{
+    id: string,
+    content: string,  // 题目
+    options: { A:string, B:string, C:string, D:string },
+    correct: string,  // 正确答案 "A"/"B"/"C"/"D"
+    explanation: string  // 解析
+  }>
+}
+
+页面要求：
+- 顶部：题号进度（第X题/共X题）+ 剩余时间倒计时（每题90秒）
+- 题目内容用较大字体显示
+- 4个选项用卡片式按钮
+- 点击选项后立即显示：选对了变绿色✅，选错了变红色❌，正确答案高亮
+- 显示解析文字
+- "下一题"按钮
+- 最后一题后显示总结：得分/总分、正确率、花费时间
+- 错题自动记录（调用 POST /api/wrong-question）
+
+请生成完整代码，用模拟数据先做好效果。</div></li><li>测试做题流程：选一道题，验证选对选错的视觉反馈是否正确</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">能做题目，选择后有颜色反馈和解析，做完所有题目后有总结界面。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【B-007 完成✅】题目练习页面完成！</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-b">B-008</span>
+      <span class="ctitle">制作错题本页面</span>
+      <span class="ctime">约4小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">展示用户做错过的所有题目，可以筛选和重做错题，帮助用户有针对性地复习。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">等 D 发出「D-010 错题接口完成」的通知后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor 的 AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/web/app/(dashboard)/wrong-questions/page.tsx 创建错题本页面。
+
+数据结构（从后端 GET /api/wrong-question 获取）：
+{
+  items: Array<{
+    id: string,
+    question: { content: string, options: object, correct: string, explanation: string },
+    userAnswer: string,  // 用户选的错误答案
+    wrongCount: number,  // 错误次数
+    lastWrongAt: string  // 最后出错时间
+  }>
+}
+
+页面要求：
+- 顶部统计：共X道错题，本周新增X道
+- 按错误次数排序（错得最多的排最前面）
+- 每道题显示：题目内容（可折叠）、用户答案（红色❌）、正确答案（绿色✅）、解析、错误次数
+- 顶部有"开始专项训练"按钮（只练错题）
+- 支持按知识点筛选
+
+请生成完整代码。</div></li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">错题本页面能显示题目列表，折叠展开正常，错误次数显示正确。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【B-008 完成✅】错题本页面完成！</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-b">Sprint 4</span>
+  <span class="sp-title">页面优化与上线</span>
+  <span class="sp-date">6月16日—6月22日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-b">B-009</span>
+      <span class="ctitle">页面整体优化美化</span>
+      <span class="ctime">约4小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">根据测试反馈，修复视觉问题，统一颜色风格，确保所有页面在手机和电脑上都美观。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">B-001 到 B-008 全部完成后，A-008 的测试报告出来后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>收集 A 发来的测试报告中属于前端的 Bug</li><li>在 Cursor 里对每个问题说：「第X个问题：[描述问题]，请帮我修复」</li><li>重点检查：手机端每个页面是否显示正常、所有按钮点击是否有响应、加载中是否有 loading 动画</li><li>把修改好的代码提交，在 Cursor 终端运行：<code>git add . && git commit -m "fix: 前端页面优化" && git push</code></li><li>通知 A 合并代码到 main</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">所有页面在手机和电脑上都显示正常，A-008 中属于前端的 Bug 全部修复。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【B-009 完成✅】前端优化完毕，Bug 已全部修复！
+A：请合并我的代码到 main，可以上线了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+</div>
+
+<div class="tab-pane" id="pane-C">
+  <div class="hero" style="background:linear-gradient(135deg,#064e3b,#059669);">
+    <h1>🤖 人员C · AI工程师</h1>
+    <p>你负责让平台「变聪明」——接入 OpenAI，让系统能自动解析文件、生成计划、出题、分析错误。<br>
+    你使用的工具：Cursor（AI编程）。主要在后端 apps/api 里工作，和D密切配合。</p>
+  </div>
+  
+<div class="sprint-hdr">
+  <span class="sp-badge sp-c">Sprint 1</span>
+  <span class="sp-title">配置 AI 接口</span>
+  <span class="sp-date">5月26日—5月31日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-c">C-001</span>
+      <span class="ctitle">注册 OpenAI 账号并获取 API Key</span>
+      <span class="ctime">约1小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">OpenAI 是我们使用的 AI 服务商（GPT-4），需要注册账号、充值，然后获取一个「API Key」（相当于调用AI的钥匙）。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">等 A 发出「A-002 完成」的通知后即可开始。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>打开浏览器，访问 <strong>platform.openai.com</strong>，注册账号（需要能收到短信的手机号）</li><li>登录后，点右上角头像→「API Keys」</li><li>点「Create new secret key」，名字填 StudyHere，点「Create」</li><li>复制生成的 Key（形如 sk-...），<strong>立刻保存到记事本</strong>，这个 Key 只显示一次！</li><li>点左侧「Billing」→「Add payment method」充值（建议先充 20 美元）</li><li>把 Key 私信发给 A（让 A 配置到服务器环境变量里）</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">API Keys 页面能看到刚创建的 Key，Billing 页面显示有余额。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【C-001 完成✅】OpenAI API Key 已获取，已私信发给 A。
+A：请把 OPENAI_API_KEY 加到 Railway 环境变量里。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-c">C-002</span>
+      <span class="ctitle">搭建 AI 服务基础文件</span>
+      <span class="ctime">约2小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">在后端项目里创建专门处理 AI 调用的代码文件，后续所有 AI 功能都从这里出发。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">A-006 完成（后端部署到 Railway）后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>打开 <strong>Cursor</strong>，打开项目里的 apps/api 文件夹</li><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/services/ 目录下创建 ai.service.ts 文件。
+
+要求：
+1. 引入 openai 包（先安装：pnpm add openai）
+2. 创建 OpenAI 客户端，读取环境变量 OPENAI_API_KEY
+3. 创建以下函数：
+   - callGPT4(prompt: string): Promise<string>  用 gpt-4o-mini 模型，temperature=0.7
+   - callGPT4WithSystem(systemPrompt: string, userPrompt: string): Promise<string>  支持系统提示词
+4. 加入错误处理：如果API返回错误，打印错误信息并返回"AI服务暂时不可用"
+5. 导出这两个函数
+
+请生成完整代码。</div></li><li>应用代码后，在 Cursor 终端运行：<code>cd apps/api && pnpm dev</code>，检查是否有报错</li><li>如果提示找不到 openai 包，运行 <code>cd apps/api && pnpm add openai</code></li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">apps/api/src/services/ai.service.ts 文件存在，后端启动没有报错。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【C-002 完成✅】AI服务基础文件已搭好，准备开始做文件解析功能。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-c">Sprint 2</span>
+  <span class="sp-title">文件解析与学习计划生成</span>
+  <span class="sp-date">6月1日—6月7日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-c">C-003</span>
+      <span class="ctitle">制作 PDF 文件解析功能</span>
+      <span class="ctime">约5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">用户上传 PDF 文件后，自动把里面的文字提取出来，存到数据库，供后续 AI 分析用。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-006（文件上传接口）完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/services/ 目录下创建 parser.service.ts 文件，实现文件内容提取。
+
+要求：
+1. 安装依赖：pnpm add pdf-parse mammoth（PDF和Word解析库）
+2. 创建函数 extractTextFromPDF(filePath: string): Promise<string>
+   - 读取 PDF 文件
+   - 提取所有文字内容
+   - 清理多余空白行
+   - 如果文字超过 50000 字，截取前 50000 字
+   - 返回纯文本字符串
+3. 创建函数 extractTextFromWord(filePath: string): Promise<string>
+   - 支持 .doc 和 .docx 格式
+   - 同样清理并截取
+4. 创建总入口函数 parseFile(filePath: string, mimeType: string): Promise<string>
+   - 根据 mimeType 判断调用哪个解析函数
+   - 支持的类型：application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document
+
+请生成完整代码。</div></li><li>应用代码，重启后端，检查没有报错</li><li>找一个测试用的 PDF 文件，让 Cursor 帮你写一个简单的测试：「帮我写一段测试代码，解析这个 PDF 并打印前200个字»</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">后端启动无报错，测试 PDF 能成功提取出文字内容。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【C-003 完成✅】PDF和Word文件解析功能完成！
+D：我的解析服务准备好了，你可以在文件上传完成后调用 parseFile() 函数。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-c">C-004</span>
+      <span class="ctitle">制作 AI 学习计划生成功能</span>
+      <span class="ctime">约6小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">把提取出来的文件文字，发给 GPT-4，让 AI 分析内容后生成一份个性化的学习计划（按天安排，每天学什么）。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">C-003 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/services/ 目录下创建 plan.service.ts 文件，实现AI学习计划生成。
+
+要求：
+1. 导入前面创建的 ai.service.ts 中的 callGPT4WithSystem
+2. 创建函数 generateStudyPlan(textContent: string, userPrefs: {days: number}): Promise<StudyPlan>
+3. 系统提示词：
+   "你是一个专业的学习顾问。根据用户提供的学习材料，生成一份结构化的学习计划。要求：1.按天分配学习内容 2.每天学习时间不超过2小时 3.循序渐进，先基础后进阶 4.必须用JSON格式返回"
+4. 用户提示词模板：
+   "请根据以下学习材料，生成一份{days}天的学习计划：\n\n{textContent的前3000字}\n\n请按照以下JSON格式返回：{title, totalDays, days:[{day, date, topics:[], goals:[], estimatedMinutes}]}"
+5. 解析AI返回的JSON字符串，转成对象
+6. 加入错误处理
+
+请生成完整代码。</div></li><li>测试：在 Cursor 里让它「用一段示例文字测试这个函数，打印生成的计划」</li><li>如果AI返回格式不对，告诉 Cursor「AI有时返回的JSON格式不规范，帮我加一个修复JSON格式的步骤」</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">调用 generateStudyPlan() 函数，能返回格式正确的 JSON 学习计划对象。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【C-004 完成✅】AI学习计划生成功能完成！
+D：可以把这个函数接入文件处理队列了，文件解析完成后调用 generateStudyPlan()。
+B：学习计划的数据结构是 {title, totalDays, days:[{day,date,topics,goals,estimatedMinutes}]}，你可以开始做展示页了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-c">Sprint 3</span>
+  <span class="sp-title">闪卡、题目与错题分析</span>
+  <span class="sp-date">6月8日—6月15日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-c">C-005</span>
+      <span class="ctitle">制作 AI 闪卡生成功能</span>
+      <span class="ctime">约5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">根据每天的学习内容，让 AI 自动生成一组闪卡（正面是知识点，背面是解释），帮用户快速记忆。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">C-004 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/services/plan.service.ts 文件中添加闪卡生成函数。
+
+要求：
+1. 函数名：generateFlashcards(dayContent: string, count: number = 10): Promise<Flashcard[]>
+2. 系统提示词：
+   "你是一个教育专家，擅长制作记忆闪卡。根据学习内容，提取最重要的知识点，制作成闪卡。每张闪卡正面是简短的问题或概念，背面是清晰的解释。必须用JSON数组格式返回。"
+3. 用户提示词：
+   "请根据以下内容生成{count}张闪卡：\n{dayContent}\n\nJSON格式：[{front:'问题', back:'答案和解释'}]"
+4. 解析返回的JSON数组
+5. Flashcard类型：{ front: string, back: string }
+
+请生成完整代码。</div></li><li>用一段示例文字测试，确认能生成10张格式正确的闪卡</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">generateFlashcards() 函数能返回包含 front/back 字段的闪卡数组。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【C-005 完成✅】AI闪卡生成功能完成！
+D：闪卡生成函数已可用，请接入到学习计划处理流程里。
+B：闪卡数据格式是 [{front, back}]，可以开始做闪卡页面了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-c">C-006</span>
+      <span class="ctitle">制作 AI 题目生成功能</span>
+      <span class="ctime">约6小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">根据学习内容，让 AI 自动生成选择题，每道题有4个选项、正确答案和详细解析。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">C-005 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/services/plan.service.ts 文件中添加题目生成函数。
+
+要求：
+1. 函数名：generateQuestions(content: string, count: number = 5): Promise<Question[]>
+2. 系统提示词：
+   "你是一个出题专家。根据学习材料，生成高质量的单选题。题目要考察对知识的理解而不仅仅是记忆。干扰项要合理，不能太明显。必须用JSON数组格式返回。"
+3. 用户提示词：
+   "请根据以下内容生成{count}道单选题：\n{content}\n\nJSON格式：[{content:'题目', options:{A:'选项A',B:'选项B',C:'选项C',D:'选项D'}, correct:'A', explanation:'解析'}]"
+4. Question类型：{ content, options: {A,B,C,D}, correct: string, explanation: string }
+5. 加入验证：确保每道题的 correct 字段只能是 A/B/C/D
+
+请生成完整代码。</div></li><li>用示例内容测试，检查题目质量，如果题目太简单，在 Cursor 里说「把题目难度调高，要考察理解而非记忆»</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">generateQuestions() 能生成包含 content/options/correct/explanation 的题目数组。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【C-006 完成✅】AI题目生成功能完成！
+D：题目生成函数已可用。
+B：题目数据格式是 [{content, options:{A,B,C,D}, correct, explanation}]。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-c">C-007</span>
+      <span class="ctitle">制作 AI 错题分析功能</span>
+      <span class="ctime">约5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">当用户做错一道题时，让 AI 分析原因：是概念没理解、是粗心、还是知识有盲点，并给出针对性建议。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">C-006 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/services/ 目录下创建 analysis.service.ts 文件。
+
+要求：
+1. 函数名：analyzeWrongAnswer(question: string, correctAnswer: string, userAnswer: string, explanation: string): Promise<Analysis>
+2. 系统提示词：
+   "你是一个学习分析专家。分析学生做错题目的原因，给出具体、有帮助的学习建议。语言要友好鼓励，不要批评学生。"
+3. 用户提示词模板：
+   "题目：{question}\n正确答案：{correctAnswer}\n学生答案：{userAnswer}\n官方解析：{explanation}\n\n请分析：1.错误原因（一句话）2.知识薄弱点 3.复习建议（具体）\n\nJSON格式：{reason:'错误原因', weakness:'薄弱点', suggestion:'建议'}"
+4. Analysis类型：{ reason: string, weakness: string, suggestion: string }
+
+请生成完整代码。</div></li><li>测试：用一道示例错题调用函数，检查分析结果是否有帮助</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">analyzeWrongAnswer() 函数能返回包含 reason/weakness/suggestion 的分析对象。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【C-007 完成✅】AI错题分析功能完成！
+D：分析接口已可用，错题保存时可以异步调用这个函数生成分析。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-c">Sprint 4</span>
+  <span class="sp-title">AI质量优化</span>
+  <span class="sp-date">6月16日—6月22日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-c">C-008</span>
+      <span class="ctitle">优化 AI 回复质量</span>
+      <span class="ctime">约3小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">收集测试中发现的 AI 生成质量问题（如计划不合理、题目太简单、分析不准确），通过改进提示词来优化。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">C-003 到 C-007 全部完成，且 A-008 测试报告出来后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>收集 A-008 测试报告中关于 AI 质量的反馈，整理成列表</li><li>针对每个问题，在 Cursor 里说：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令（按实际问题调整）：</div><div class="prompt-box">StudyHere 项目的 AI 功能出现了以下质量问题：
+[描述具体问题，例如：学习计划每天任务量不均匀，有的天只有一个目标，有的天有十几个]
+
+请帮我修改 apps/api/src/services/plan.service.ts 中对应的提示词，让AI的输出更稳定、更高质量。</div></li><li>修改后重新测试，确认问题已改善</li><li>提交代码，通知 A 合并</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">测试报告中的 AI 质量问题已全部修复，重新测试输出质量明显提升。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【C-008 完成✅】AI质量优化完成，所有提示词已优化！
+A：可以合并我的代码了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+</div>
+
+<div class="tab-pane" id="pane-D">
+  <div class="hero" style="background:linear-gradient(135deg,#78350f,#d97706);">
+    <h1>🗄 人员D · 后端工程师</h1>
+    <p>你负责数据的存储和传输——用户数据、文件、学习记录全靠你管理。你是B和C功能的「管道」和「仓库」。<br>
+    你使用的工具：Cursor（AI编程）、Supabase 控制台。</p>
+  </div>
+  
+<div class="sprint-hdr">
+  <span class="sp-badge sp-d">Sprint 0</span>
+  <span class="sp-title">数据库设计</span>
+  <span class="sp-date">5月22日—5月25日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-001</span>
+      <span class="ctitle">用 AI 设计数据库表结构</span>
+      <span class="ctime">约3小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">设计整个系统需要存储哪些数据：用户信息、上传的文件、学习计划、闪卡、题目、错题记录等。把这些数据的结构定义好，就像设计一个Excel表格模板。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">等 A 发出「A-003 Supabase配置完成」的通知，得到数据库连接信息后开始。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>打开 <strong>Cursor</strong>，打开 apps/api 文件夹</li><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我为 StudyHere 学习平台设计 Prisma 数据库 Schema，保存到 apps/api/prisma/schema.prisma 文件中。
+
+需要以下数据表：
+1. User（用户）：id, email, passwordHash, name, createdAt, updatedAt
+2. OTP（验证码）：id, email, code, expiresAt, used
+3. Vault（用户上传的文件）：id, userId, filename, fileUrl, status(pending/processing/done/failed), textContent, createdAt
+4. StudyPlan（学习计划）：id, userId, vaultId, title, totalDays, planData(JSON), createdAt
+5. Flashcard（闪卡）：id, planId, front, back, mastery(0-5)
+6. Question（题目）：id, planId, content, options(JSON), correct, explanation
+7. AnswerRecord（答题记录）：id, userId, questionId, userAnswer, isCorrect, answeredAt
+8. WrongQuestion（错题）：id, userId, questionId, wrongCount, analysis(JSON), lastWrongAt
+
+数据库用 PostgreSQL，请生成完整的 schema.prisma 文件，包括正确的关联关系和索引。</div></li><li>Cursor 生成后点「Apply」，查看生成的 schema 文件</li><li>确认8张表都在里面，关联关系看起来合理（不需要完全理解，但要确认没有明显缺失）</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">apps/api/prisma/schema.prisma 文件存在，包含8张数据表的定义。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-001 完成✅】数据库Schema设计完成！
+A：Schema已设计好，请确认一下再让我建表。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-002</span>
+      <span class="ctitle">在 Supabase 中建立数据表</span>
+      <span class="ctime">约2小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">把设计好的表结构真正创建到 Supabase 云数据库里，完成后数据库就可以存储数据了。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-001 完成，且 A 确认 Schema 没有问题后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor 终端，运行以下命令安装 Prisma 工具（如果还没安装）：<code>cd apps/api && pnpm add prisma @prisma/client</code></li><li>配置数据库连接：在 apps/api 目录下创建 .env 文件，内容是：<code>DATABASE_URL=[A给的Supabase连接字符串，格式：postgresql://...]</code></li><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/api 目录下执行数据库迁移，把 prisma/schema.prisma 里定义的所有表创建到 Supabase 数据库中。
+
+步骤：
+1. 运行 npx prisma generate 生成 Prisma Client
+2. 运行 npx prisma db push 把表结构推送到数据库
+3. 如果有报错，帮我分析并修复
+
+请在终端逐步执行并告诉我结果。</div></li><li>命令执行完成后，打开 Supabase 控制台，点左侧「Table Editor」</li><li>检查是否能看到 User、Vault、StudyPlan 等8张表</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">Supabase 控制台的 Table Editor 里能看到所有8张表，没有报错。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-002 完成✅】数据库表已建好！
+A：Supabase里8张表都建好了，可以让C和其他人开始了。
+C：数据库已准备好，你可以开始配置AI接口了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-d">Sprint 1</span>
+  <span class="sp-title">用户认证系统</span>
+  <span class="sp-date">5月26日—5月31日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-003</span>
+      <span class="ctitle">制作用户注册接口</span>
+      <span class="ctime">约4小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">当用户点击「注册」时，后端负责：检查邮箱是否已注册、把密码加密存储、返回成功/失败结果。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-002 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/api/src/routes/ 目录下创建 auth.route.ts 文件，实现用户注册接口。
+
+要求：
+1. 使用 Hono.js 框架
+2. POST /api/auth/register 接口
+3. 接收：{ email: string, password: string, code: string }（code是验证码）
+4. 处理逻辑：
+   a. 用 zod 验证邮箱格式和密码长度（最少8位）
+   b. 查询数据库确认邮箱未注册
+   c. 验证验证码是否正确且未过期（从OTP表查）
+   d. 用 bcrypt 加密密码（pnpm add bcrypt @types/bcrypt）
+   e. 把用户信息存入 User 表
+   f. 生成 JWT token（pnpm add jsonwebtoken @types/jsonwebtoken），有效期7天
+   g. 返回 { success: true, token, user: { id, email, name } }
+5. 错误处理：邮箱已存在返回400，验证码错误返回400
+
+请生成完整代码。</div></li><li>应用代码，重启后端（Cursor 终端：<code>cd apps/api && pnpm dev</code>）</li><li>在 Cursor AI 里说：「帮我用 curl 命令测试注册接口，我要在终端验证它是否工作»</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">在终端用 curl 发送注册请求，能收到包含 token 的成功响应。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-003 完成✅】注册接口完成！
+B：可以开始把注册页面和接口对接了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-004</span>
+      <span class="ctitle">制作邮箱验证码接口</span>
+      <span class="ctime">约3小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">用户点「获取验证码」时，后端生成一个6位随机数，发送到用户邮箱，并存到数据库备验证。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-002 完成后可与 D-003 同时进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/routes/auth.route.ts 中添加发送验证码接口。
+
+要求：
+1. POST /api/auth/send-otp 接口
+2. 接收：{ email: string }
+3. 处理逻辑：
+   a. 验证邮箱格式
+   b. 生成6位随机数字验证码
+   c. 将验证码存入 OTP 表，设置10分钟后过期
+   d. 使用 nodemailer 发送邮件（先安装：pnpm add nodemailer @types/nodemailer）
+   e. 邮件内容：主题"StudyHere 验证码"，正文"您的验证码是：XXXXXX，10分钟内有效。"
+4. 邮件发送配置：使用 Gmail SMTP 或 Resend.com（推荐Resend，免费额度大）
+5. 邮件配置从环境变量读取：RESEND_API_KEY 或 EMAIL_USER/EMAIL_PASS
+
+请生成完整代码，并告诉我需要填写哪些环境变量。</div></li><li>按照 Cursor 的指引，注册 Resend.com 账号（免费），获取 API Key，加到环境变量</li><li>测试：用自己的邮箱调用接口，看是否收到验证码邮件</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">调用接口后，邮箱能收到包含6位验证码的邮件。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-004 完成✅】验证码发送接口完成！邮件发送正常。
+B：验证码接口已就绪，注册和登录页都可以接入了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-005</span>
+      <span class="ctitle">制作用户登录接口</span>
+      <span class="ctime">约3小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">当用户输入邮箱和验证码点登录时，后端验证验证码是否正确，成功则返回登录凭证（Token）。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-003、D-004 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/routes/auth.route.ts 中添加登录接口。
+
+要求：
+1. POST /api/auth/login 接口
+2. 接收：{ email: string, code: string }（验证码登录，无需密码）
+3. 处理逻辑：
+   a. 验证邮箱格式
+   b. 查询 OTP 表，验证验证码是否正确且未过期
+   c. 如果用户不存在，自动创建新用户（首次登录即注册）
+   d. 标记验证码为已使用（OTP.used = true）
+   e. 生成 JWT token，有效期7天
+   f. 返回 { success: true, token, user: { id, email, name } }
+4. 另外创建 GET /api/auth/me 接口：
+   - 需要 Authorization: Bearer token 请求头
+   - 返回当前登录用户的信息
+
+请生成完整代码，包含 JWT 验证中间件。</div></li><li>重启后端，用 Cursor 测试登录流程：先发验证码→用验证码登录→用 token 访问 /me 接口</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">发验证码→用验证码登录→访问/me 的完整流程测试通过，/me 返回当前用户信息。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-005 完成✅】登录接口完成！完整认证流程已验证。
+B：登录接口已就绪，可以完整对接了。认证头格式：Authorization: Bearer <token></div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-d">Sprint 2</span>
+  <span class="sp-title">文件上传与处理</span>
+  <span class="sp-date">6月1日—6月7日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-006</span>
+      <span class="ctitle">制作文件上传接口</span>
+      <span class="ctime">约5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">用户选择文件后，后端把文件保存到云存储（Supabase Storage），并在数据库里记录这个文件，等待 AI 处理。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-005 完成，且 A-003（Supabase）配置完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/routes/ 目录下创建 vault.route.ts 文件，实现文件上传接口。
+
+要求：
+1. POST /api/vault/upload 接口，需要 JWT 认证
+2. 接收：multipart/form-data，字段名为 file
+3. 安装依赖：pnpm add @supabase/supabase-js multer @types/multer
+4. 处理逻辑：
+   a. 验证文件类型（只允许 pdf, doc, docx）
+   b. 验证文件大小（最大50MB）
+   c. 将文件上传到 Supabase Storage（bucket名：user-files）
+   d. 在 Vault 数据表创建记录：{ userId, filename, fileUrl, status: "pending" }
+   e. 把这个 vault 记录的 id 加入文件处理队列（先用简单的异步函数，队列后续再加）
+   f. 返回 { success: true, vaultId, filename }
+5. Supabase 配置从环境变量读取：SUPABASE_URL, SUPABASE_SERVICE_KEY
+
+请生成完整代码。</div></li><li>应用代码，重启后端</li><li>打开 Supabase 控制台 → Storage，检查是否有 user-files 这个 bucket，如果没有，在控制台手动创建它</li><li>用 Cursor 测试上传一个 PDF 文件，检查 Supabase Storage 和数据库 Vault 表里是否有记录</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">Supabase Storage 里能看到上传的测试文件，数据库 Vault 表里有对应记录，status 是 pending。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-006 完成✅】文件上传接口完成！
+C：上传接口已就绪，文件存在 Supabase Storage，你可以接入文件解析了。
+B：上传接口地址是 POST /api/vault/upload，需要 Authorization 头。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-007</span>
+      <span class="ctitle">对接 AI 处理队列</span>
+      <span class="ctime">约5小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">把文件上传和 AI 处理串联起来：文件上传完成后，自动触发 AI 解析文件内容、生成学习计划，全程不需要用户等待点击。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-006 完成，C-003 和 C-004 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请帮我在 apps/api 中创建文件处理流水线，文件上传后自动完成以下步骤：
+
+1. 在 apps/api/src/workers/fileProcessor.ts 创建处理函数 processVault(vaultId: string)
+2. 处理流程：
+   a. 从数据库查询 Vault 记录，获取文件 URL
+   b. 更新 Vault status 为 "processing"
+   c. 下载文件到临时目录
+   d. 调用 C 写的 parseFile() 函数提取文本内容
+   e. 将文本内容更新到 Vault.textContent 字段
+   f. 调用 C 写的 generateStudyPlan() 生成学习计划（默认14天）
+   g. 将计划保存到 StudyPlan 表
+   h. 调用 generateFlashcards() 为每天生成10张闪卡，批量保存到 Flashcard 表
+   i. 调用 generateQuestions() 为每天生成5道题，批量保存到 Question 表
+   j. 更新 Vault status 为 "done"
+3. 任何步骤失败时，更新 status 为 "failed" 并记录错误信息
+4. 在 vault.route.ts 中，文件上传成功后调用 processVault()（用 setTimeout 异步执行，不阻塞上传响应）
+
+请生成完整代码。</div></li><li>应用代码，重新上传一个 PDF 测试</li><li>在 Supabase 控制台的 Vault 表刷新，观察 status 字段的变化（pending → processing → done）</li><li>done 后检查 StudyPlan、Flashcard、Question 表是否有数据</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">上传文件后，等待约1-3分钟，Vault status 变为 done，StudyPlan、Flashcard、Question 表里都有数据。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-007 完成✅】AI自动处理流水线完成！上传文件→自动出计划→自动生成闪卡题目，全流程测通了！
+B：现在上传文件后会自动生成数据，你可以开始对接学习计划展示页了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-d">Sprint 3</span>
+  <span class="sp-title">学习与练习功能接口</span>
+  <span class="sp-date">6月8日—6月15日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-008</span>
+      <span class="ctitle">制作学习计划查询接口</span>
+      <span class="ctime">约3小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">前端需要读取学习计划来展示，这个接口返回用户的所有学习计划和某个计划的详细内容。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-007 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/routes/ 目录下创建 plan.route.ts 文件，实现学习计划相关接口。
+
+接口列表（都需要JWT认证）：
+1. GET /api/plan — 获取当前用户的所有学习计划列表
+   返回：[{ id, title, totalDays, vaultId, createdAt }]
+
+2. GET /api/plan/:id — 获取某个计划的详细内容
+   返回：{ id, title, totalDays, planData }（planData是完整的每日安排JSON）
+
+3. GET /api/plan/:id/status — 查询文件处理状态（用于上传页轮询）
+   返回：{ status: "pending"|"processing"|"done"|"failed" }
+
+请生成完整代码，使用 Prisma 查询数据库。</div></li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">用 Cursor 测试3个接口，能正常返回数据。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-008 完成✅】学习计划接口完成！
+B：可以把学习计划展示页和这些接口对接了。/api/plan/:id/status 可以用来轮询处理状态。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-009</span>
+      <span class="ctitle">制作练习功能接口</span>
+      <span class="ctime">约4小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">提供闪卡和题目的数据给前端，以及记录用户的练习结果。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-008 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/routes/ 目录下创建 practice.route.ts 文件，实现练习功能接口。
+
+接口列表（都需要JWT认证）：
+1. GET /api/flashcard?planId=xxx — 获取某个计划的所有闪卡
+   返回：[{ id, front, back, mastery }]
+
+2. PATCH /api/flashcard/:id — 更新闪卡掌握程度
+   接收：{ mastery: number }（0-5）
+
+3. GET /api/question?planId=xxx — 获取某个计划的题目（随机取20道）
+   返回：[{ id, content, options, correct, explanation }]
+
+4. POST /api/answer — 提交答题记录
+   接收：{ questionId, userAnswer }
+   逻辑：记录到AnswerRecord表；如果答错，更新或创建WrongQuestion记录（wrongCount+1）；调用 analyzeWrongAnswer() 异步生成错题分析
+   返回：{ isCorrect, correctAnswer, explanation }
+
+请生成完整代码。</div></li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">测试所有接口，获取闪卡/题目、提交答案都正常，答错时 WrongQuestion 表有新记录。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-009 完成✅】练习接口全部完成！
+B：闪卡接口 /api/flashcard?planId=xxx，题目接口 /api/question?planId=xxx，答题 POST /api/answer 都已可用。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-010</span>
+      <span class="ctitle">制作错题本接口</span>
+      <span class="ctime">约3小时</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">提供用户的错题列表，以及错题的AI分析内容。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">D-009 完成后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>在 Cursor AI 对话框，把下面这段话复制进去：</li><li><div class="prompt-label">📋 复制给 Cursor 的指令：</div><div class="prompt-box">请在 apps/api/src/routes/practice.route.ts 中添加错题本接口。
+
+接口（需要JWT认证）：
+1. GET /api/wrong-question — 获取当前用户所有错题
+   返回：[{
+     id,
+     question: { content, options, correct, explanation },
+     userAnswer（最近一次错误答案）,
+     wrongCount,
+     analysis: { reason, weakness, suggestion }（AI分析，可能为null）,
+     lastWrongAt
+   }]
+   按 wrongCount 倒序排列（错得最多的排最前面）
+
+2. DELETE /api/wrong-question/:id — 从错题本移除某道题
+
+请生成完整代码。</div></li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">GET /api/wrong-question 返回格式正确的错题列表，包含 AI 分析内容（如果已生成）。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-010 完成✅】错题本接口完成！
+B：错题接口 GET /api/wrong-question 已就绪，可以做错题本页面了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="sprint-hdr">
+  <span class="sp-badge sp-d">Sprint 4</span>
+  <span class="sp-title">测试优化</span>
+  <span class="sp-date">6月16日—6月22日</span>
+</div>
+<div class="card">
+  <details>
+    <summary class="card-head">
+      <input type="checkbox" class="chk" onclick="event.stopPropagation();updateProg()">
+      <span class="cnum num-d">D-011</span>
+      <span class="ctitle">接口全面测试与Bug修复</span>
+      <span class="ctime">约1天</span>
+    </summary>
+    <div class="card-body">
+      <div class="sec"><div class="sec-label">📖 做什么</div><div class="sec-body">系统地测试所有后端接口，修复测试中发现的问题，确保数据在各种情况下都能正确存储和返回。</div></div>
+      <div class="sec"><div class="sec-label">⚠️ 开始前确认</div><div class="dep">所有接口完成（D-003到D-010），A-008 测试报告出来后进行。</div></div>
+      <div class="sec"><div class="sec-label">🔨 具体步骤</div><div class="sec-body"><ol><li>收集 A-008 测试报告中属于后端的 Bug</li><li>在 Cursor 里对每个 Bug 说：「接口出现了这个问题：[描述]，帮我找出原因并修复»</li><li>重点测试以下边界情况：上传超大文件、并发上传多个文件、同一用户同时登录多设备、验证码过期后再使用</li><li>把修复后的代码提交：<code>git add . && git commit -m "fix: 后端接口Bug修复" && git push</code></li><li>通知 A 合并代码</li></ol></div></div>
+      <div class="sec"><div class="sec-label">✅ 如何确认完成</div><div class="verify">测试报告中的所有后端 Bug 修复完毕，所有接口重新测试通过。</div></div>
+      <div class="sec"><div class="sec-label">📢 完成后通知队友</div>
+        <div class="notify"><b>复制下面这段话发到群里：</b>【D-011 完成✅】后端所有 Bug 修复完毕，接口测试全部通过！
+A：可以合并我的代码进行最终上线检查了。</div>
+      </div>
+    </div>
+  </details>
+</div>
+</div>
+
+<div class="prog-wrap">
+  <div class="prog-lbl">整体完成进度</div>
+  <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="prog-cnt" id="prog-cnt">0 / 0 项完成</div>
+</div>
+
+
+<script>
+mermaid.initialize({startOnLoad:true, theme:'default', securityLevel:'loose'});
+
+function showTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('visible'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.className = 'tab-btn');
+  document.getElementById('pane-' + name).classList.add('visible');
+  const btn = document.querySelector('[data-tab="' + name + '"]');
+  if(name === 'overview') btn.classList.add('act-ov');
+  else btn.classList.add('act-' + name.toLowerCase());
+  localStorage.setItem('sh_tab', name);
+}
+
+function updateProg() {
+  const all = document.querySelectorAll('.chk');
+  const done = document.querySelectorAll('.chk:checked');
+  const pct = all.length ? Math.round(done.length / all.length * 100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-cnt').textContent = done.length + ' / ' + all.length + ' 项完成';
+  // persist
+  const state = {};
+  all.forEach((c,i) => { state[i] = c.checked; });
+  localStorage.setItem('sh_prog', JSON.stringify(state));
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  // restore checkboxes
+  const saved = localStorage.getItem('sh_prog');
+  if(saved) {
+    const state = JSON.parse(saved);
+    document.querySelectorAll('.chk').forEach((c,i) => {
+      if(state[i]) { c.checked = true; }
+    });
+  }
+  updateProg();
+  // restore tab
+  const t = localStorage.getItem('sh_tab') || 'overview';
+  showTab(t);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1320 @@
+<!-- ========== MEMBER D · 后端工程师 ========== -->
+
+<!-- ===== Sprint 0 ===== -->
+<div class="sprint-block sp0">
+  <div class="sprint-title">
+    <span class="sp-label">Sprint 0</span>
+    <span class="sp-name">后端脚手架搭建</span>
+    <span class="sp-date">2026-05-22 ~ 23</span>
+    <span class="sp-count">6 个任务 · 6h</span>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S0-001</span>
+        <span class="tname">Hono 服务器入口 + 中间件注册 + 优雅关闭</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/index.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>安装依赖：<code>pnpm add hono @hono/node-server pino</code>（在 apps/api 目录下）</li>
+          <li>创建 Hono app 实例，严格按顺序 use 中间件：<code>cors → logger → error</code>；auth 中间件在各路由内按需挂载</li>
+          <li>注册路由：<code>app.route('/api/v1/vaults', vaultsRouter)</code>、<code>app.route('/api/v1/study', studyRouter)</code>、<code>app.route('/api/v1/practice', practiceRouter)</code>、<code>app.route('/api/v1/exam', examRouter)</code>、<code>app.route('/api/v1/wrong', wrongRouter)</code>、<code>app.route('/api/v1/progress', progressRouter)</code>、<code>app.route('/api/v1/samples', samplesRouter)</code></li>
+          <li>健康检查路由直接挂：<code>app.get('/health', healthHandler)</code>（不需要 auth）</li>
+          <li><code>serve(app, { port: Number(process.env.PORT) || 3001 })</code> 启动，打印 <code>Server running on port 3001</code></li>
+          <li>SIGTERM 处理：<code>process.on('SIGTERM', async () => { await prisma.$disconnect(); await bullWorker.close(); process.exit(0); })</code>；同样处理 SIGINT</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          <code>curl http://localhost:3001/health</code> 返回 <code>{"status":"ok","db":"ok","redis":"ok"}</code>；
+          发送 SIGTERM 后终端打印 graceful shutdown 日志且进程退出码为 0
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">A-S0-002（Monorepo 初始化）、A-S0-007（Prisma schema + migrate）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S0-002</span>
+        <span class="tname">CORS 中间件配置</span>
+        <div class="tbadges">
+          <span class="btime">0.5h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/middleware/cors.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>从 <code>hono/cors</code> 引入 cors 中间件</li>
+          <li>读取环境变量 <code>ALLOWED_ORIGINS</code>（逗号分隔字符串），split 为数组；fallback 到 <code>['http://localhost:5173']</code></li>
+          <li>配置：<code>origin: (origin) => allowedOrigins.includes(origin) ? origin : allowedOrigins[0]</code></li>
+          <li><code>allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']</code></li>
+          <li><code>allowHeaders: ['Content-Type', 'Authorization']</code></li>
+          <li><code>maxAge: 86400</code>（preflight 缓存 1 天）</li>
+          <li>导出 <code>corsMiddleware</code> 函数供 index.ts use</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          带 <code>Origin: http://localhost:5173</code> 的 OPTIONS 请求返回 200 + 正确 CORS headers；
+          非白名单 origin 不返回 <code>Access-Control-Allow-Origin</code>
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S0-001（index.ts 完成后方可验证）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S0-003</span>
+        <span class="tname">Pino 请求日志中间件</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/middleware/logger.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>安装：<code>pnpm add pino pino-pretty</code></li>
+          <li>创建 pino 实例：<code>const logger = pino({ level: process.env.LOG_LEVEL || 'info', transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined })</code></li>
+          <li>编写 Hono middleware 函数，在 <code>next()</code> 前记录开始时间 <code>const start = Date.now()</code></li>
+          <li>await next() 后提取：<code>method = c.req.method</code>、<code>path = c.req.path</code>、<code>statusCode = c.res.status</code>、<code>durationMs = Date.now() - start</code></li>
+          <li>从 JWT context 提取 userId：<code>const userId = c.get('jwtPayload')?.sub ?? 'anonymous'</code></li>
+          <li>调用 <code>logger.info({ method, path, statusCode, durationMs, userId })</code></li>
+          <li>错误时 <code>logger.error({ method, path, err })</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          每次请求终端输出格式：<code>{"level":"info","method":"GET","path":"/health","statusCode":200,"durationMs":5,"userId":"anonymous"}</code>
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">A-S0-005（auth middleware 提供 jwtPayload context）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S0-004</span>
+        <span class="tname">统一错误处理中间件 + AppError 类</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/middleware/error.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>定义 <code>AppError</code> 类：<code>class AppError extends Error { constructor(public code: string, message: string, public statusCode: number = 400) { super(message); this.name = 'AppError'; } }</code></li>
+          <li>定义常用错误常量：<code>VAULT_NOT_FOUND</code>(404)、<code>FORBIDDEN</code>(403)、<code>VALIDATION_ERROR</code>(400)、<code>UNAUTHORIZED</code>(401)、<code>INTERNAL_ERROR</code>(500)</li>
+          <li>编写 Hono onError handler：<code>app.onError((err, c) => { ... })</code></li>
+          <li>若 err instanceof AppError：返回 <code>c.json({ success: false, error: { code: err.code, message: err.message } }, err.statusCode)</code></li>
+          <li>若 err 是 ZodError（从 validate.ts 抛出）：返回 <code>c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: '请求参数错误', fields: err.flatten().fieldErrors } }, 400)</code></li>
+          <li>其余 Error：生产环境只返回 <code>{ code: 'INTERNAL_ERROR', message: '服务器内部错误' }</code>，开发环境附加 err.stack；HTTP 500</li>
+          <li>导出 <code>AppError</code> 类和 <code>errorHandler</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          在路由中 <code>throw new AppError('VAULT_NOT_FOUND', '宝库不存在', 404)</code>，curl 返回 <code>{"success":false,"error":{"code":"VAULT_NOT_FOUND","message":"宝库不存在"}}</code>，状态码 404；
+          堆栈信息不出现在生产环境响应中
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">无</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S0-005</span>
+        <span class="tname">Zod 请求体校验中间件工厂</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/middleware/validate.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>安装：<code>pnpm add zod</code></li>
+          <li>编写工厂函数：<code>export function validateBody&lt;T extends z.ZodTypeAny&gt;(schema: T): MiddlewareHandler { return async (c, next) => { ... } }</code></li>
+          <li>在工厂内：<code>const body = await c.req.json()</code>，catch JSON 解析错误返回 400 <code>{ code: 'INVALID_JSON', message: '请求体不是合法 JSON' }</code></li>
+          <li>调用 <code>schema.safeParse(body)</code>，若 <code>!result.success</code>：<code>return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: '参数校验失败', fields: result.error.flatten().fieldErrors } }, 400)</code></li>
+          <li>校验通过：<code>c.set('validatedBody', result.data)</code>，然后 <code>await next()</code></li>
+          <li>同理提供 <code>validateQuery(schema)</code> 用于 Query 参数校验</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          路由使用 <code>validateBody(CreateVaultSchema)</code> 后，缺少 vaultName 字段时返回 400 + <code>fields: { vaultName: ['Required'] }</code>
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">无</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S0-006</span>
+        <span class="tname">GET /health 健康检查端点</span>
+        <div class="tbadges">
+          <span class="btime">0.5h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/index.ts</code>（内联或抽到 routes/health.ts）</div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>DB 检查：<code>await prisma.$queryRaw`SELECT 1`</code>，成功则 <code>db: 'ok'</code>，catch 则 <code>db: 'error'</code></li>
+          <li>Redis 检查：<code>await redis.ping()</code>，返回 <code>'PONG'</code> 则 <code>redis: 'ok'</code>，catch 则 <code>redis: 'error'</code></li>
+          <li>两个检查并行执行：<code>const [dbResult, redisResult] = await Promise.allSettled([...])</code></li>
+          <li>若任一为 error，HTTP 状态码返回 503；全部 ok 返回 200</li>
+          <li>响应体：<code>{ status: 'ok'|'degraded', db: 'ok'|'error', redis: 'ok'|'error', timestamp: new Date().toISOString() }</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          DB 正常时 <code>curl /health</code> 返回 200 <code>{"status":"ok","db":"ok","redis":"ok"}</code>；
+          断开 DB 时返回 503 <code>{"status":"degraded","db":"error"}</code>
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">A-S0-007（Prisma client 初始化）、BullMQ/Redis 连接配置</div></div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- ===== Sprint 1 ===== -->
+<div class="sprint-block sp1">
+  <div class="sprint-title">
+    <span class="sp-label">Sprint 1</span>
+    <span class="sp-name">宝库 CRUD + 文件上传</span>
+    <span class="sp-date">2026-05-24 ~ 30</span>
+    <span class="sp-count">10 个任务 · 14.5h</span>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-001</span>
+        <span class="tname">packages/types vault 类型定义</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>packages/types/src/vault.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>定义 <code>VaultStatus</code> enum：<code>UPLOADING | PROCESSING | PLAN_READY | ACTIVE | COMPLETED | ERROR</code></li>
+          <li>定义 <code>VaultDTO</code>：<code>{ id, name, studyGoal, status: VaultStatus, targetDate: string, dailyMinutes: number, currentDay: number, totalDays: number, todayComplete: boolean, createdAt: string, updatedAt: string }</code></li>
+          <li>定义 <code>CreateVaultRequest</code>：<code>{ vaultName: string, studyGoal: string, targetDate: string, dailyMinutes: number }</code>，并导出对应 Zod schema <code>CreateVaultSchema</code></li>
+          <li>定义 <code>VaultDetailDTO extends VaultDTO</code>：增加 <code>studyPlan: StudyPlanDTO, todayPlan: DayPlanDTO, progress: VaultProgressSummary</code></li>
+          <li>定义 <code>SampleDTO</code>：<code>{ id, title, subject, difficulty: 'easy'|'medium'|'hard', pageCount: number, description: string }</code></li>
+          <li>全部从 <code>packages/types/src/index.ts</code> re-export</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">在 apps/api 中 <code>import { VaultDTO, CreateVaultSchema } from '@studyhere/types'</code> 无 TypeScript 报错</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">无（纯类型包）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-002</span>
+        <span class="tname">vaults 路由骨架 + auth 中间件挂载</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/vaults.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li><code>const vaults = new Hono()</code></li>
+          <li>全局挂载 auth 中间件：<code>vaults.use('/*', authMiddleware)</code></li>
+          <li>注册路由占位（handler 后续实现）：<code>GET /</code>、<code>POST /</code>、<code>GET /:id</code>、<code>DELETE /:id</code>、<code>GET /:id/status</code>、<code>GET /:id/plan</code>、<code>POST /:id/plan/confirm</code></li>
+          <li>每个占位 handler 返回 <code>c.json({ todo: true }, 501)</code></li>
+          <li>export default vaults，在 index.ts 注册 <code>app.route('/api/v1/vaults', vaults)</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">不带 Authorization header 请求任何 /api/v1/vaults 路由返回 401；带合法 token 返回 501</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">A-S0-005（auth middleware）、D-S0-001</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-003</span>
+        <span class="tname">GET /api/v1/vaults — 查询用户宝库列表</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/vaults.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>从 JWT context 取 <code>userId = c.get('jwtPayload').sub</code></li>
+          <li>Prisma 查询：<code>prisma.vault.findMany({ where: { userId }, include: { studyPlan: { select: { currentDay: true, totalDays: true } } }, orderBy: { updatedAt: 'desc' } })</code></li>
+          <li>今日完成判断：对每个 vault，额外查 <code>prisma.studyRecord.findFirst({ where: { userId, vaultId: vault.id, date: todayDateStr, dayComplete: true } })</code>，可用 Promise.all 并行</li>
+          <li>今日日期字符串：<code>new Date().toISOString().slice(0, 10)</code>（YYYY-MM-DD）</li>
+          <li>组装 <code>VaultDTO[]</code> 返回：<code>c.json({ success: true, data: dtos })</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          新用户返回 <code>{"success":true,"data":[]}</code>；
+          有宝库时返回包含 <code>currentDay、totalDays、todayComplete</code> 字段的数组，按 updatedAt 降序
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S1-002、Prisma schema（Vault + StudyPlan + StudyRecord 表）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-004</span>
+        <span class="tname">POST /api/v1/vaults — 创建宝库 + 获取预签名上传 URL</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/vaults.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>挂载 <code>validateBody(CreateVaultSchema)</code> 中间件</li>
+          <li>取 validatedBody：<code>const { vaultName, studyGoal, targetDate, dailyMinutes } = c.get('validatedBody')</code></li>
+          <li>校验 targetDate 不早于今日，否则抛 <code>AppError('INVALID_DATE', '目标日期不能早于今天', 400)</code></li>
+          <li>计算 totalDays：<code>Math.ceil((new Date(targetDate) - new Date()) / 86400000)</code></li>
+          <li>Prisma 创建 Vault：<code>prisma.vault.create({ data: { userId, name: vaultName, studyGoal, targetDate, dailyMinutes, status: 'UPLOADING' } })</code></li>
+          <li>调 storage.service：<code>const uploadUrl = await storageService.getSignedUploadUrl(`vaults/${vault.id}/source`, 3600)</code></li>
+          <li>返回：<code>c.json({ success: true, data: { vaultId: vault.id, uploadUrl } }, 201)</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          POST 合法 body 返回 201 + <code>{ vaultId: "uuid", uploadUrl: "https://..." }</code>；
+          用 uploadUrl 直接 PUT 文件到 Supabase Storage 成功
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S1-007（storage.service）、D-S1-001（类型）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-005</span>
+        <span class="tname">GET /api/v1/vaults/:id — 宝库详情</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/vaults.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>查 Vault：<code>prisma.vault.findUnique({ where: { id }, include: { studyPlan: true } })</code>，不存在抛 404；userId 不匹配抛 403</li>
+          <li>查当日 DayPlan：<code>prisma.dayPlan.findFirst({ where: { studyPlanId: vault.studyPlan.id, dayNumber: vault.studyPlan.currentDay }, include: { knowledgePoints: { select: { id, title } } } })</code></li>
+          <li>聚合进度统计（并行 Promise.all）：
+            <ul>
+              <li>已完成天数：<code>prisma.studyRecord.count({ where: { vaultId: id, dayComplete: true } })</code></li>
+              <li>总闪卡数：<code>prisma.flashcard.count({ where: { knowledgePoint: { vaultId: id } } })</code></li>
+              <li>总题数：<code>prisma.question.count({ where: { knowledgePoint: { vaultId: id } } })</code></li>
+            </ul>
+          </li>
+          <li>组装 <code>VaultDetailDTO</code> 并返回</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">返回包含 studyPlan、todayPlan（含 KP 标题列表）、progress 的完整 VaultDetailDTO；访问他人宝库返回 403</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S1-002、A-S0-007（Prisma schema）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-006</span>
+        <span class="tname">DELETE /api/v1/vaults/:id — 删除宝库（级联）</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/vaults.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>鉴权：查 Vault 且 userId 匹配（同 D-S1-005 第1步）</li>
+          <li>删除 Supabase Storage 文件：<code>await storageService.deleteFile(`vaults/${id}/source`)</code>（忽略 not-found 错误）</li>
+          <li>Prisma 事务内级联删除（顺序很重要，先删子表）：
+            <code>prisma.$transaction([
+              prisma.wrongQuestion.deleteMany({ where: { question: { knowledgePoint: { vaultId: id } } } }),
+              prisma.answerRecord.deleteMany({ where: { question: { knowledgePoint: { vaultId: id } } } }),
+              prisma.flashcard.deleteMany({ where: { knowledgePoint: { vaultId: id } } }),
+              prisma.question.deleteMany({ where: { knowledgePoint: { vaultId: id } } }),
+              prisma.mastery.deleteMany({ where: { knowledgePoint: { vaultId: id } } }),
+              prisma.knowledgePoint.deleteMany({ where: { vaultId: id } }),
+              prisma.studyRecord.deleteMany({ where: { vaultId: id } }),
+              prisma.dayPlan.deleteMany({ where: { studyPlan: { vaultId: id } } }),
+              prisma.studyPlan.deleteMany({ where: { vaultId: id } }),
+              prisma.vault.delete({ where: { id } })
+            ])</code>
+          </li>
+          <li>返回 <code>c.json({ success: true })</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">DELETE 后再次 GET 该 vaultId 返回 404；DB 内所有关联记录均已删除（可用 Prisma Studio 验证）</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S1-007（storage.service）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-007</span>
+        <span class="tname">Supabase Storage 封装服务</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/services/storage.service.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>安装：<code>pnpm add @supabase/supabase-js</code></li>
+          <li>初始化 Supabase client：<code>createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)</code>，使用 service key（绕过 RLS）</li>
+          <li>BUCKET 常量：<code>const BUCKET = process.env.SUPABASE_BUCKET || 'studyhere-files'</code></li>
+          <li>实现 <code>uploadFile(path: string, buffer: Buffer, mimeType: string)</code>：调 <code>supabase.storage.from(BUCKET).upload(path, buffer, { contentType: mimeType, upsert: true })</code>，错误时抛 AppError</li>
+          <li>实现 <code>deleteFile(path: string)</code>：调 <code>supabase.storage.from(BUCKET).remove([path])</code></li>
+          <li>实现 <code>getSignedUrl(path: string, expiresIn: number)</code>：调 <code>supabase.storage.from(BUCKET).createSignedUrl(path, expiresIn)</code>，返回 signedUrl 字符串</li>
+          <li>实现 <code>getSignedUploadUrl(path: string, expiresIn: number)</code>：调 <code>supabase.storage.from(BUCKET).createSignedUploadUrl(path)</code></li>
+          <li>导出单例：<code>export const storageService = new StorageService()</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">调用 getSignedUploadUrl 返回有效 URL；用该 URL PUT 文件后，调用 getSignedUrl 可获取可访问下载链接</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">Supabase 项目配置（SUPABASE_URL、SUPABASE_SERVICE_KEY 环境变量）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-008</span>
+        <span class="tname">文件上传校验中间件</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/middleware/file-validator.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>安装：<code>pnpm add pdf-parse</code> + <code>pnpm add -D @types/pdf-parse</code></li>
+          <li>从请求中读取文件 buffer：<code>const arrayBuffer = await c.req.arrayBuffer(); const buffer = Buffer.from(arrayBuffer)</code></li>
+          <li>检查 Content-Type：必须是 <code>application/pdf</code> 或 <code>application/vnd.openxmlformats-officedocument.wordprocessingml.document</code>；否则返回 400 <code>{ code: 'INVALID_FILE_TYPE', message: '仅支持 PDF 或 Word 文件' }</code></li>
+          <li>检查文件大小：<code>buffer.byteLength > 10 * 1024 * 1024</code> → 400 <code>{ code: 'FILE_TOO_LARGE', message: '文件大小不能超过 10MB' }</code></li>
+          <li>若为 PDF：调 <code>pdfParse(buffer)</code> 取 <code>data.numpages</code>，页数 &gt; 30 → 400 <code>{ code: 'TOO_MANY_PAGES', message: 'PDF 不能超过 30 页' }</code></li>
+          <li>校验通过：<code>c.set('fileBuffer', buffer)</code>，await next()</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">上传 .txt 文件返回 INVALID_FILE_TYPE；上传 11MB PDF 返回 FILE_TOO_LARGE；上传 35 页 PDF 返回 TOO_MANY_PAGES；合法文件通过</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">无</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-009</span>
+        <span class="tname">GET /api/v1/vaults/:id/status — 处理进度查询</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/vaults.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>鉴权 + 查 Vault（同 D-S1-005）</li>
+          <li>根据 <code>vault.status</code> 映射进度百分比和消息：
+            <ul>
+              <li>UPLOADING → progress: 10, message: '文件上传中', currentStep: 'upload'</li>
+              <li>PROCESSING → progress: 40, message: 'AI 正在解析文档', currentStep: 'parsing'</li>
+              <li>PLAN_READY → progress: 80, message: '学习计划已生成，等待确认', currentStep: 'plan_ready'</li>
+              <li>ACTIVE → progress: 100, message: '学习进行中', currentStep: 'active'</li>
+              <li>ERROR → progress: 0, message: vault.errorMessage || '处理失败', currentStep: 'error'</li>
+            </ul>
+          </li>
+          <li>返回：<code>c.json({ success: true, data: { status, progress, message, currentStep } })</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">前端轮询该接口可正确显示处理进度；PLAN_READY 状态时前端跳转计划确认页</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S1-002</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S1-010</span>
+        <span class="tname">GET /api/v1/samples — 推荐样本资料列表</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/samples.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>创建 Hono Router，<strong>不挂载</strong> auth 中间件（样本资料公开）</li>
+          <li>GET /：<code>prisma.sample.findMany({ orderBy: { createdAt: 'asc' } })</code></li>
+          <li>映射为 SampleDTO（排除内部字段如 filePath）</li>
+          <li>返回：<code>c.json({ success: true, data: samples })</code></li>
+          <li>在 apps/api/prisma/seed.ts 预置 5 条样本数据（不同学科：高中数学、英语、物理、化学、历史）</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">不带 token 也能 GET /api/v1/samples 返回 5 条样本数据</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">Prisma schema 中 Sample 表 + seed 数据</div></div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- ===== Sprint 2 ===== -->
+<div class="sprint-block sp2">
+  <div class="sprint-title">
+    <span class="sp-label">Sprint 2</span>
+    <span class="sp-name">计划确认 + 学练 API</span>
+    <span class="sp-date">2026-05-31 ~ 06-07</span>
+    <span class="sp-count">10 个任务 · 18h</span>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-001</span>
+        <span class="tname">GET /api/v1/vaults/:id/plan — 学习计划概要</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/vaults.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>鉴权 + 查 Vault（同前）；状态不是 PLAN_READY 或 ACTIVE 时抛 400 <code>PLAN_NOT_READY</code></li>
+          <li>查 StudyPlan + 所有 DayPlan：<code>prisma.studyPlan.findUnique({ where: { vaultId: id }, include: { dayPlans: { include: { knowledgePoints: { select: { id: true, title: true } } }, orderBy: { dayNumber: 'asc' } } } })</code></li>
+          <li>统计总知识点数：<code>prisma.knowledgePoint.count({ where: { vaultId: id } })</code></li>
+          <li>统计总预计时长：<code>studyPlan.dayPlans.reduce((sum, d) => sum + d.estimatedMinutes, 0)</code></li>
+          <li>返回：<code>{ studyPlan: { totalDays, dailyMinutes, confirmedAt }, days: [ { dayNumber, estimatedMinutes, kpTitles: [...] } ], totalKPs, totalEstimatedMinutes }</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">返回包含每天 KP 标题列表的计划，前端可渲染计划预览卡片</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">AI 服务已生成 StudyPlan + DayPlan + KP 数据</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-002</span>
+        <span class="tname">POST /api/v1/vaults/:id/plan/confirm — 确认学习计划</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/vaults.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>鉴权 + 查 Vault；状态必须为 PLAN_READY，否则抛 400</li>
+          <li>取 body：<code>const { dailyMinutes } = await c.req.json()</code>（可选字段）</li>
+          <li>若传入 <code>dailyMinutes</code> 且与 <code>studyPlan.dailyMinutes</code> 不同：
+            <ul>
+              <li>更新 StudyPlan.dailyMinutes</li>
+              <li>向 BullMQ 投递 <code>ai-plan</code> job：<code>await planQueue.add('replan', { vaultId: id, dailyMinutes })</code></li>
+              <li>Vault status 改为 PROCESSING，返回 <code>{ status: 'replanning', message: '计划重新生成中' }</code></li>
+            </ul>
+          </li>
+          <li>否则（直接确认）：<code>prisma.studyPlan.update({ where: { vaultId: id }, data: { confirmedAt: new Date() } })</code></li>
+          <li>更新 Vault status 为 ACTIVE：<code>prisma.vault.update({ where: { id }, data: { status: 'ACTIVE' } })</code></li>
+          <li>投递当日内容预生成 job：<code>await generateQueue.add('generate-day', { vaultId: id, dayNumber: 1 })</code></li>
+          <li>返回：<code>c.json({ success: true, data: { status: 'ACTIVE' } })</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">确认后 GET /vaults/:id 返回 status=ACTIVE；修改 dailyMinutes 后返回 replanning 状态且 BullMQ 中有新 job</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">BullMQ 队列初始化（ai-plan、ai-generate 队列）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-003</span>
+        <span class="tname">GET /api/v1/vaults/:id/study/cards — 今日闪卡</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/study.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>鉴权 + 校验 Vault 归属，status 必须为 ACTIVE</li>
+          <li>查当前 DayPlan：<code>prisma.dayPlan.findFirst({ where: { studyPlanId, dayNumber: studyPlan.currentDay }, include: { knowledgePoints: { select: { id: true } } } })</code></li>
+          <li>尝试 Redis 缓存：<code>const cacheKey = `vault:${id}:day:${currentDay}:cards`</code>，<code>redis.get(cacheKey)</code>，命中则 JSON.parse 直接返回</li>
+          <li>Cache miss：查 DB <code>prisma.flashcard.findMany({ where: { kpId: { in: kpIds } }, select: { id, question, answer, hint, kpId } })</code></li>
+          <li>写入 Redis 缓存，TTL = 86400（1天）：<code>redis.setex(cacheKey, 86400, JSON.stringify(cards))</code></li>
+          <li>返回：<code>c.json({ success: true, data: cards })</code>（FlashcardDTO[]）</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">首次请求查 DB，响应头无缓存标记；再次请求命中 Redis（可在日志中观察）；返回包含 question/answer/hint 字段的数组</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">AI 服务已生成 Flashcard 数据；Redis 连接配置</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-004</span>
+        <span class="tname">POST /api/v1/vaults/:id/study/complete — 完成闪卡学习</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/study.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>校验 body：<code>z.object({ cards: z.array(z.object({ id: z.string(), known: z.boolean() })) })</code></li>
+          <li>按 KP 分组计算 knownRate：<code>Map&lt;kpId, {known, total}&gt;</code>，遍历 cards，查每张 flashcard 的 kpId（可一次性查 DB）</li>
+          <li>并行调用 mastery.service.updateFromStudy：<code>await Promise.all(kpGroups.map(({kpId, knownRate}) => masteryService.updateFromStudy(kpId, knownRate)))</code></li>
+          <li>upsert StudyRecord：<code>prisma.studyRecord.upsert({ where: { userId_vaultId_date: { userId, vaultId: id, date: today } }, update: { studyDone: true }, create: { userId, vaultId: id, date: today, studyDone: true } })</code></li>
+          <li>取更新后的掌握度列表和 nextStepRecommendation（调 recommendation.service）</li>
+          <li>返回：<code>{ masteryUpdates: [{kpId, kpTitle, score}], nextStepRecommendation: {primary, alternatives} }</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">提交全部 known=true 后掌握度上升；StudyRecord.studyDone=true 写入 DB；nextStepRecommendation.primary.module 为 'practice'</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S2-005（mastery.service）、D-S3-012（recommendation.service）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-005</span>
+        <span class="tname">掌握度计算服务 mastery.service.ts</span>
+        <div class="tbadges">
+          <span class="btime">3h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/services/mastery.service.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>定义权重常量：<code>const STUDY_WEIGHT = 0.3; const PRACTICE_WEIGHT = 0.5; const EXAM_WEIGHT = 0.6</code></li>
+          <li>核心算法 — 加权移动平均更新：<code>newScore = clamp(oldScore * (1 - weight) + inputRate * weight, 0, 1)</code>，其中 clamp 确保结果在 [0, 1] 范围内</li>
+          <li>实现 <code>updateFromStudy(kpId: string, knownRate: number): Promise&lt;number&gt;</code>：
+            <ul>
+              <li>查现有 Mastery：<code>prisma.mastery.findFirst({ where: { kpId, userId } })</code></li>
+              <li>计算：<code>newScore = (existing?.score ?? 0) * (1 - 0.3) + knownRate * 0.3</code></li>
+              <li>upsert：<code>prisma.mastery.upsert({ where: { userId_kpId: { userId, kpId } }, update: { score: newScore, updatedAt: new Date() }, create: { userId, kpId, score: newScore } })</code></li>
+            </ul>
+          </li>
+          <li>实现 <code>updateFromPractice(kpId, correctRate)</code>：同上，weight=0.5</li>
+          <li>实现 <code>updateFromExam(kpId, correctRate)</code>：同上，weight=0.6</li>
+          <li>实现 <code>getMasteries(userId, vaultId)</code>：查所有该 vaultId 下 KP 的掌握度，返回 <code>[{kpId, kpTitle, score}]</code></li>
+          <li>实现 <code>getAverageMastery(userId, vaultId)</code>：对 getMasteries 结果取均值</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          初始掌握度 0，knownRate=1.0 调 updateFromStudy 后得 0.3；
+          再次调 updateFromPractice(correctRate=1.0) 后得 0.3×0.5 + 1.0×0.5 = 0.65；
+          值始终在 [0,1] 区间内
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">Prisma schema 中 Mastery 表含 userId_kpId unique 索引</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-006</span>
+        <span class="tname">GET /api/v1/vaults/:id/practice/questions — 今日练习题</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/practice.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>鉴权 + Vault 归属检验，status=ACTIVE</li>
+          <li>Redis 缓存 key：<code>vault:${id}:day:${currentDay}:questions</code>，先尝试 GET</li>
+          <li>Cache miss：查今日 DayPlan 的 kpIds → 查这些 KP 下的所有题目</li>
+          <li>优先选取用户从未答过的题（LEFT JOIN answerRecord where userId）：<code>prisma.question.findMany({ where: { kpId: { in: kpIds }, answerRecords: { none: { userId } } } })</code></li>
+          <li>若不足 5 题，补充答错过的题（answerRecords.some({ userId, correct: false })）</li>
+          <li>随机打乱，取 5-10 题</li>
+          <li>返回 QuestionDTO（<strong>不含</strong> correctIndex 字段）：<code>{ id, stem, options: string[], type, kpId }</code></li>
+          <li>写入 Redis 缓存 TTL=86400</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">返回 5-10 题，响应体中无 correctIndex 字段；优先返回未做过的题目</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">AI 服务已生成 Question 数据</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-007</span>
+        <span class="tname">POST /api/v1/vaults/:id/practice/submit — 提交练习答案</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/practice.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>校验 body：<code>z.object({ answers: z.array(z.object({ questionId: z.string(), selectedIndex: z.number() })) })</code></li>
+          <li>批量查 Question（含 correctIndex、explanation、kpId）：<code>prisma.question.findMany({ where: { id: { in: questionIds } } })</code></li>
+          <li>判断正误：<code>const correct = q.correctIndex === selectedIndex</code>，统计 correctCount / wrongCount</li>
+          <li>批量写 AnswerRecord（事务内）：<code>prisma.answerRecord.createMany({ data: answers.map(...) })</code></li>
+          <li>调 D-S2-008（错题入库逻辑）处理所有答错的题</li>
+          <li>调 D-S2-009（掌握度计算）更新各 KP 掌握度</li>
+          <li>upsert StudyRecord.practiceDone=true（同 D-S2-004）</li>
+          <li>score = Math.round(correctCount / answers.length * 100)</li>
+          <li>返回：<code>{ score, correctCount, wrongCount, masteryUpdates: [...], explanations: [{questionId, correct, explanation, correctIndex}] }</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">全对返回 score=100 + 空 wrongCount；答错的题出现在 WrongQuestion 表；explanations 数组包含每题解析</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S2-008、D-S2-009、D-S2-005</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-008</span>
+        <span class="tname">错题自动入库逻辑（被 submit 调用）</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/practice.ts</code>（内联辅助函数）或抽为 <code>services/wrong.service.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>函数签名：<code>async function archiveWrongQuestions(userId: string, wrongAnswers: {questionId, vaultId}[]): Promise&lt;void&gt;</code></li>
+          <li>查已存在的 WrongQuestion：<code>prisma.wrongQuestion.findMany({ where: { userId, questionId: { in: wrongQuestionIds }, clearedAt: null } })</code></li>
+          <li>分为两组：已存在 vs 不存在</li>
+          <li>已存在组：<code>prisma.wrongQuestion.updateMany({ where: { id: { in: existingIds } }, data: { wrongCount: { increment: 1 }, updatedAt: new Date() } })</code></li>
+          <li>不存在组：<code>prisma.wrongQuestion.createMany({ data: newEntries.map(q => ({ userId, questionId: q.questionId, vaultId: q.vaultId, wrongCount: 1, clearedAt: null })) })</code></li>
+          <li>全部在事务内执行</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">同一题第二次答错后 wrongCount=2；WrongQuestion.clearedAt 始终为 null（未清除）</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">Prisma schema WrongQuestion 表</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-009</span>
+        <span class="tname">练习掌握度计算逻辑（被 submit 调用）</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/practice.ts</code>（内联）或 <code>services/mastery.service.ts</code>（扩展）</div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>将本次答题结果按 kpId 分组：<code>Map&lt;kpId, {correct: number, total: number}&gt;</code></li>
+          <li>对每个 KP：correctRate = correct / total</li>
+          <li>并行调用：<code>await Promise.all(kpStats.map(({kpId, correctRate}) => masteryService.updateFromPractice(kpId, correctRate)))</code></li>
+          <li>收集返回的 newScore，构建 masteryUpdates 数组：<code>[{kpId, kpTitle, oldScore, newScore}]</code></li>
+          <li>注意：此处 correctRate 是<strong>本次</strong>答题正确率，不是历史累计（加权移动平均在 mastery.service 内处理）</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">本次全对（correctRate=1.0）且历史掌握度 0.3，更新后 = 0.3×0.5 + 1.0×0.5 = 0.65；masteryUpdates 返回旧值和新值</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S2-005（mastery.service）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S2-010</span>
+        <span class="tname">POST /api/v1/vaults/:id/day/check — 当日完成检查</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/study.ts</code>（或独立路由文件）</div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>查今日 StudyRecord：<code>prisma.studyRecord.findFirst({ where: { userId, vaultId: id, date: today } })</code></li>
+          <li>判断 <code>dayComplete = record?.studyDone === true && record?.practiceDone === true</code></li>
+          <li>若 dayComplete=true 且 record.dayComplete 还是 false：更新 <code>dayComplete=true</code>，并调 streak.service 重新计算连续天数</li>
+          <li>若 dayComplete=true：推进 currentDay：<code>prisma.studyPlan.update({ data: { currentDay: { increment: 1 } } })</code></li>
+          <li>查下一天 DayPlan（next day）的 KP 标题列表，作为 nextDayPreview</li>
+          <li>调 streak.service 计算 streak</li>
+          <li>返回：<code>{ dayComplete, streak: { current, longest }, nextDayPreview: { dayNumber, kpTitles } }</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">study 和 practice 都完成后，接口返回 dayComplete=true + streak + 下一天预览；currentDay 在 StudyPlan 中递增</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S3-010（streak.service）、D-S2-004、D-S2-007</div></div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- ===== Sprint 3 ===== -->
+<div class="sprint-block sp3">
+  <div class="sprint-title">
+    <span class="sp-label">Sprint 3</span>
+    <span class="sp-name">考试 + 错题 + 进度 + 推荐</span>
+    <span class="sp-date">2026-06-08 ~ 11</span>
+    <span class="sp-count">12 个任务 · 27h</span>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-001</span>
+        <span class="tname">POST /api/v1/vaults/:id/exam/start — 开始阶段测验</span>
+        <div class="tbadges">
+          <span class="btime">3h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/exam.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>鉴权 + Vault 归属，status=ACTIVE</li>
+          <li>检查是否已有进行中的 Exam（status=IN_PROGRESS）：有则返回现有 examId，不重复创建</li>
+          <li>触发条件判断：
+            <ul>
+              <li>手动触发：body 中 <code>manual: true</code> 直接通过</li>
+              <li>自动触发：<code>currentDay % 5 === 0 || currentDay % 7 === 0 || currentDay % 10 === 0</code></li>
+              <li>两者都不满足：抛 400 <code>EXAM_NOT_TRIGGERED</code></li>
+            </ul>
+          </li>
+          <li>查已学 KP（currentDay 之前的所有 DayPlan 的 KP）：<code>prisma.knowledgePoint.findMany({ where: { dayPlans: { some: { dayNumber: { lte: currentDay } } } } })</code></li>
+          <li>调 question-selector.selectQuestions(learnedKPs, 15)，目标覆盖 ≥70% KP</li>
+          <li>创建 Exam 记录：<code>prisma.exam.create({ data: { userId, vaultId: id, status: 'IN_PROGRESS', questions: { connect: selectedQuestions.map(q => ({id: q.id})) } } })</code></li>
+          <li>返回 ExamDTO：<code>{ examId, questionCount, questions: QuestionDTO[]（不含答案）}</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">在第 5 天调用返回 15-20 题；重复调用返回已有 exam；非触发日不传 manual=true 返回 400</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S3-002（question-selector）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-002</span>
+        <span class="tname">question-selector.ts — 跨 KP 选题算法</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/services/question-selector.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>函数签名：<code>async function selectQuestions(userId: string, kpIds: string[], targetCount: number): Promise&lt;Question[]&gt;</code></li>
+          <li>策略1 — 按 KP 均匀分配：<code>perKP = Math.max(1, Math.floor(targetCount / kpIds.length))</code>，记录每个 KP 分配配额</li>
+          <li>策略2 — 优先错误率高的题：对每个 KP，查 AnswerRecord 统计错误率：<code>SELECT questionId, COUNT(*) as total, SUM(CASE WHEN correct=false THEN 1 ELSE 0 END) as wrong FROM AnswerRecord WHERE userId AND kpId GROUP BY questionId ORDER BY wrong/total DESC LIMIT perKP</code>（用 Prisma groupBy 或 $queryRaw 实现）</li>
+          <li>策略3 — 不足配额时随机补充：<code>prisma.question.findMany({ where: { kpId, id: { notIn: alreadySelected } }, take: remaining, orderBy: { id: 'asc' } })</code>（asc 排序后 JS shuffle）</li>
+          <li>合并结果，Fisher-Yates shuffle，取前 targetCount 题</li>
+          <li>断言覆盖 KP 数 / 总 KP 数 ≥ 0.7，不足则从未覆盖的 KP 各补 1 题</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          10 个 KP 时选 15 题，覆盖 KP 数 ≥ 7；
+          有错题历史时优先返回错误率高的题目
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">Prisma schema AnswerRecord 表含 correct boolean 字段</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-003</span>
+        <span class="tname">POST /api/v1/vaults/:id/exam/submit — 提交考试</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/exam.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>校验 body：<code>{ examId: string, answers: [{questionId, selectedIndex}] }</code></li>
+          <li>查 Exam（必须属于当前 userId + status=IN_PROGRESS）</li>
+          <li>批量查 Question（含 correctIndex、kpId、explanation）</li>
+          <li>判分：totalScore = correctCount / answers.length * 100</li>
+          <li>事务内：批量写 AnswerRecord → 调 D-S2-008 写错题 → 更新 Exam status=COMPLETED + score=totalScore</li>
+          <li>按 KP 分组统计各 KP 得分：<code>Map&lt;kpId, {correct, total}&gt;</code></li>
+          <li>批量调 mastery.service.updateFromExam（weight=0.6）</li>
+          <li>生成 ExamReport：<code>{ examId, totalScore, totalQuestions, correctCount, wrongCount, kpScores: [{kpId, kpTitle, score, correct, total}], wrongQuestions: [{questionId, stem, correctIndex, selectedIndex, explanation}] }</code></li>
+          <li>返回 report</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">全对返回 totalScore=100；错题写入 WrongQuestion；Exam.status 变为 COMPLETED；各 KP 掌握度按 weight=0.6 更新</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S2-005、D-S2-008、D-S3-001</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-004</span>
+        <span class="tname">考试触发条件检查服务</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/services/exam-trigger.service.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>实现 <code>shouldTriggerExam(currentDay: number): boolean</code>：<code>return [5,7,10].some(n => currentDay % n === 0)</code></li>
+          <li>在 D-S2-010（当日完成检查）中，当 dayComplete=true 时调用此方法</li>
+          <li>若返回 true：写入 StudyRecord.examTriggered=true</li>
+          <li>在 GET /api/v1/vaults/:id/progress 或 GET /api/v1/vaults/:id 的响应中附加 <code>examSuggested: boolean</code> 字段</li>
+          <li>前端读取该字段，显示「建议今天做阶段测验」提示横幅</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">第 5 天完成当日任务后，GET /vaults/:id 响应中 examSuggested=true；第 6 天为 false</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S2-010、Prisma schema StudyRecord 含 examTriggered boolean</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-005</span>
+        <span class="tname">GET /api/v1/vaults/:id/wrong — 错题本列表</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/wrong.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>鉴权 + Vault 归属</li>
+          <li>查错题：<code>prisma.wrongQuestion.findMany({ where: { userId, question: { knowledgePoint: { vaultId: id } }, clearedAt: null }, include: { question: { include: { knowledgePoint: { select: { id, title } } } } }, orderBy: { updatedAt: 'desc' } })</code></li>
+          <li>按 KP 分组：<code>Map&lt;kpId, {kpTitle, questions[]}&gt;</code></li>
+          <li>构建 backlogWarning：<code>total &gt; 50 ? {level: 'urgent', message: '错题积压较多，建议专项清错'} : total &gt; 30 ? {level: 'warning', message: '错题已超30题，建议抽时间清理'} : null</code></li>
+          <li>返回：<code>{ total, backlogWarning, groups: [{kpId, kpTitle, count, questions: [{id, stem, options, wrongCount, lastWrongAt}]}] }</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">错题按 KP 分组显示；total=35 时 backlogWarning.level='warning'；已清除（clearedAt!=null）的题不出现在列表</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S2-008（错题写入逻辑）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-006</span>
+        <span class="tname">POST /api/v1/vaults/:id/wrong/:questionId/answer — 回答错题</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/wrong.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>校验 body：<code>{ selectedIndex: number }</code></li>
+          <li>查 WrongQuestion（userId + questionId + clearedAt=null），不存在抛 404</li>
+          <li>查 Question（含 correctIndex、explanation）</li>
+          <li>判断正误：<code>const correct = question.correctIndex === selectedIndex</code></li>
+          <li>写 AnswerRecord（type='WRONG_REVIEW'）</li>
+          <li>若 correct=true：<code>prisma.wrongQuestion.update({ where: { id: wq.id }, data: { clearedAt: new Date() } })</code></li>
+          <li>若 correct=false：<code>prisma.wrongQuestion.update({ data: { wrongCount: { increment: 1 }, updatedAt: new Date() } })</code></li>
+          <li>统计剩余错题数：<code>remainingCount = await prisma.wrongQuestion.count({ where: { userId, question: { knowledgePoint: { vaultId: id } }, clearedAt: null } })</code></li>
+          <li>返回：<code>{ correct, explanation: question.explanation, correctIndex: question.correctIndex, remainingCount }</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">答对后 WrongQuestion.clearedAt 不再为 null；答错后 wrongCount 递增；remainingCount 准确</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S2-008、D-S3-005</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-007</span>
+        <span class="tname">错题积压阈值服务 wrong-backlog.service.ts</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/services/wrong-backlog.service.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>实现 <code>checkBacklog(userId: string, vaultId: string): Promise&lt;BacklogStatus&gt;</code></li>
+          <li>查未清除错题数：<code>const count = await prisma.wrongQuestion.count({ where: { userId, question: { knowledgePoint: { vaultId } }, clearedAt: null } })</code></li>
+          <li>分级逻辑：<code>count &gt; 50 → level: 'urgent', message: '错题堆积严重（&gt;50），强烈建议今日专项清错，避免影响后续学习'</code></li>
+          <li><code>count &gt; 30 → level: 'warning', message: '错题已超30题，建议抽时间集中清理'</code></li>
+          <li><code>count &gt; 0 → level: 'normal', message: `还有 ${count} 道错题待复习`</code></li>
+          <li><code>count === 0 → level: 'clear', message: '错题已全部清除，太棒了！'</code></li>
+          <li>返回：<code>{ count, level: 'normal'|'warning'|'urgent'|'clear', message }</code></li>
+          <li>在 D-S3-005 和 D-S3-009 中调用此方法</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">count=0 返回 clear；count=31 返回 warning；count=55 返回 urgent</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">无</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-008</span>
+        <span class="tname">wrong-archive.ts — 定时归档错题任务</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/jobs/wrong-archive.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>安装：<code>pnpm add node-cron</code> + <code>pnpm add -D @types/node-cron</code></li>
+          <li>编写 archiveOldWrongQuestions 函数：
+            <ul>
+              <li>计算截止时间：<code>const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)</code></li>
+              <li>批量更新：<code>const result = await prisma.wrongQuestion.updateMany({ where: { clearedAt: null, updatedAt: { lt: cutoff }, archived: false }, data: { archived: true } })</code></li>
+              <li>记录日志：<code>logger.info({ archived: result.count }, 'wrong-archive job completed')</code></li>
+            </ul>
+          </li>
+          <li>注册 Cron：<code>cron.schedule('0 0 * * *', archiveOldWrongQuestions, { timezone: 'Asia/Shanghai' })</code></li>
+          <li>在 index.ts 启动时 import 此文件（side-effect import）</li>
+          <li>Prisma schema 中 WrongQuestion 需要 archived boolean（default false）字段</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">手动调用 archiveOldWrongQuestions()，30 天前的未清除错题 archived 变为 true；Cron 每天 0:00 自动执行并打印日志</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S0-001（index.ts 启动注册）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-009</span>
+        <span class="tname">GET /api/v1/vaults/:id/progress — 全量进度统计</span>
+        <div class="tbadges">
+          <span class="btime">3h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/progress.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>鉴权 + Vault 归属</li>
+          <li>并行 Promise.all 执行以下查询：
+            <ul>
+              <li>completedDays：<code>prisma.studyRecord.count({ where: { userId, vaultId: id, dayComplete: true } })</code></li>
+              <li>totalStudyMinutes：<code>prisma.studyRecord.aggregate({ where: { userId, vaultId: id }, _sum: { studyMinutes: true } })</code></li>
+              <li>flashcardsTotal / flashcardsStudied：count Flashcard + count 有 AnswerRecord 的 Flashcard</li>
+              <li>questionsTotal：<code>prisma.question.count({ where: { knowledgePoint: { vaultId: id } } })</code></li>
+              <li>questionsDone + correctRate：查 AnswerRecord 聚合</li>
+              <li>wrongTotal / wrongCleared：count WrongQuestion（全部）+ count（clearedAt!=null）</li>
+              <li>masteries：调 mastery.service.getMasteries(userId, vaultId)</li>
+              <li>streak：调 streak.service.getStreak(userId, vaultId)</li>
+            </ul>
+          </li>
+          <li>计算 completionRate：<code>Math.round(completedDays / totalDays * 100)</code></li>
+          <li>返回完整进度对象（见任务描述中的字段列表）</li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">响应包含所有规定字段；completionRate 准确；masteries 数组包含每个 KP 的掌握度分数</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S2-005（mastery.service）、D-S3-010（streak.service）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-010</span>
+        <span class="tname">连续天数计算服务 streak.service.ts</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/services/streak.service.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>实现 <code>getStreak(userId: string, vaultId: string): Promise&lt;{current: number, longest: number}&gt;</code></li>
+          <li>查所有完成天的日期：<code>prisma.studyRecord.findMany({ where: { userId, vaultId, dayComplete: true }, select: { date: true }, orderBy: { date: 'desc' } })</code></li>
+          <li>日期字符串转 Date，去重（Set），降序排列</li>
+          <li>计算当前连续天数（从今天或昨天往前数）：
+            <ul>
+              <li><code>const today = new Date().toISOString().slice(0,10)</code></li>
+              <li>若 dates[0] 既不是今天也不是昨天：current = 0</li>
+              <li>否则从 dates[0] 往前，检查 dates[i+1] 是否等于 dates[i] - 1天，连续则 current++</li>
+            </ul>
+          </li>
+          <li>计算最长连续天数：滑动窗口算法，遍历 dates（升序），<code>if (dates[i] - dates[i-1] === 1天) cur++; else cur=1; longest = max(longest, cur)</code></li>
+          <li>返回：<code>{ current, longest }</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          完成日期：[今天, 昨天, 前天, 3天前跳过, 4天前] → current=3, longest=3；
+          今天没完成但昨天完成 → current=0（或视业务规则为昨天的连续数）
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">Prisma StudyRecord 表含 date(String YYYY-MM-DD) + dayComplete 字段</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-011</span>
+        <span class="tname">GET /api/v1/vaults/:id/next-step — 智能推荐下一步</span>
+        <div class="tbadges">
+          <span class="btime">3h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/progress.ts</code>（或独立 routes/next-step.ts）</div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>接收 query 参数：<code>currentModule: 'study'|'practice'|'exam'|'wrong'</code>，可选 <code>masteryScore: number</code></li>
+          <li>若未传 masteryScore，调 mastery.service.getAverageMastery(userId, vaultId) 获取</li>
+          <li>调 recommendation.service.recommend(userId, vaultId, currentModule, masteryScore)</li>
+          <li>返回：<code>c.json({ success: true, data: { primary: {module, label, reason}, alternatives: [{module, label}] } })</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          currentModule=study → primary.module=practice；
+          currentModule=practice + masteryScore=0.5 → primary.module=study；
+          currentModule=exam + 有未清错题 → primary.module=wrong
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S3-012（recommendation.service）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S3-012</span>
+        <span class="tname">规则推荐引擎 recommendation.service.ts</span>
+        <div class="tbadges">
+          <span class="btime">4h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/services/recommendation.service.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>函数签名：<code>async function recommend(userId, vaultId, currentModule, masteryScore): Promise&lt;RecommendResult&gt;</code></li>
+          <li>预查数据（并行）：<code>wrongCount</code>（未清除错题数）、<code>practiceDone</code>（今日）、<code>studyDone</code>（今日）、<code>isLastDay</code>（currentDay === totalDays）</li>
+          <li>PRD 9.2 推荐矩阵实现（严格按分支）：
+            <ul>
+              <li><strong>currentModule === 'study'</strong>：→ primary: {module: 'practice', label: '去做练习', reason: '学完知识点后趁热打铁做练习，巩固记忆'}</li>
+              <li><strong>currentModule === 'practice' &amp;&amp; masteryScore &lt; 0.6</strong>：→ primary: {module: 'study', label: '回顾知识点', reason: `当前掌握度${Math.round(masteryScore*100)}%，建议重新学习`}；alternatives: [{module: 'wrong', label: '查看错题'}]</li>
+              <li><strong>currentModule === 'practice' &amp;&amp; masteryScore &gt;= 0.6 &amp;&amp; masteryScore &lt; 0.85</strong>：→ primary: {module: 'exam', label: '做阶段测验', reason: '掌握度良好，测验一下检验成果'}；alternatives: [{module: 'wrong', label: '清理错题'}]</li>
+              <li><strong>currentModule === 'practice' &amp;&amp; masteryScore &gt;= 0.85</strong>：→ primary: {module: 'next_day', label: '开始下一天学习', reason: '今日掌握度优秀，可以推进新内容'}；alternatives: [{module: 'exam', label: '做阶段测验'}, {module: 'wrong', label: '清理错题'}]</li>
+              <li><strong>currentModule === 'exam' &amp;&amp; wrongCount &gt; 0</strong>：→ primary: {module: 'wrong', label: '纠错错题', reason: `考试结束，有${wrongCount}道错题待复习`}</li>
+              <li><strong>currentModule === 'exam' &amp;&amp; masteryScore &lt; 0.6 &amp;&amp; wrongCount === 0</strong>：→ primary: {module: 'study', label: '重新学习', reason: '考试得分较低，建议从头复习知识点'}</li>
+              <li><strong>currentModule === 'exam' &amp;&amp; masteryScore &gt;= 0.6 &amp;&amp; wrongCount === 0</strong>：→ primary: {module: 'next_day', label: '开始下一天学习', reason: '考试通过，继续前进！'}</li>
+              <li><strong>currentModule === 'wrong' &amp;&amp; wrongCount === 0</strong>：→ primary: {module: 'exam', label: '做阶段测验', reason: '错题已全部清除，测验巩固效果'}</li>
+              <li><strong>currentModule === 'wrong' &amp;&amp; wrongCount &gt; 0</strong>：→ primary: {module: 'wrong', label: '继续清错', reason: `还剩${wrongCount}道错题，继续加油`}；alternatives: [{module: 'study', label: '回顾知识点'}]</li>
+            </ul>
+          </li>
+          <li>特殊情况：isLastDay=true 时 next_day 替换为 {module: 'complete', label: '完成课程', reason: '所有内容已学完，恭喜！'}</li>
+          <li>导出单例：<code>export const recommendationService = new RecommendationService()</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          9个分支场景各自验证通过；
+          masteryScore=0.59 返回 study；masteryScore=0.70 返回 exam；masteryScore=0.90 返回 next_day；
+          exam后有错题返回 wrong；exam后无错题且低分返回 study
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S2-005（mastery.service）、D-S3-007（wrong-backlog.service）</div></div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- ===== Sprint 4 ===== -->
+<div class="sprint-block sp4">
+  <div class="sprint-title">
+    <span class="sp-label">Sprint 4</span>
+    <span class="sp-name">性能优化与测试</span>
+    <span class="sp-date">2026-06-12 ~ 19</span>
+    <span class="sp-count">3 个任务 · 7h</span>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S4-001</span>
+        <span class="tname">Prisma schema 补充数据库索引</span>
+        <div class="tbadges">
+          <span class="btime">2h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/prisma/schema.prisma</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>在每个 model 的 <code>@@index</code> 块中添加以下索引：
+            <ul>
+              <li>User：<code>@@index([phone])</code></li>
+              <li>Vault：<code>@@index([userId])</code></li>
+              <li>KnowledgePoint：<code>@@index([vaultId])</code></li>
+              <li>Question：<code>@@index([kpId])</code></li>
+              <li>AnswerRecord：<code>@@index([userId, questionId])</code></li>
+              <li>WrongQuestion：<code>@@index([userId, clearedAt])</code></li>
+              <li>StudyRecord：<code>@@index([userId, date])</code></li>
+              <li>Mastery：<code>@@unique([userId, kpId])</code>（若尚未定义为 unique constraint）</li>
+            </ul>
+          </li>
+          <li>运行：<code>pnpm prisma migrate dev --name add_performance_indexes</code></li>
+          <li>运行：<code>pnpm prisma generate</code> 更新 client</li>
+          <li>用 Prisma Studio 或 <code>psql \d &lt;table_name&gt;</code> 验证索引创建成功</li>
+          <li>对高频查询做 EXPLAIN ANALYZE 验证索引生效：<code>EXPLAIN ANALYZE SELECT * FROM "WrongQuestion" WHERE "userId"='xxx' AND "clearedAt" IS NULL</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          migrate 无报错；
+          EXPLAIN ANALYZE 显示 WrongQuestion 查询使用 Index Scan 而非 Seq Scan；
+          Mastery 表尝试插入重复 userId+kpId 报唯一约束错误
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">所有 Sprint 的 DB 操作完成后统一添加，避免频繁 migrate</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S4-002</span>
+        <span class="tname">Vitest 集成测试 — 核心路由</span>
+        <div class="tbadges">
+          <span class="btime">4h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/routes/vaults.test.ts</code>、<code>practice.test.ts</code>、<code>progress.test.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>安装：<code>pnpm add -D vitest @hono/node-server</code>（若未安装）</li>
+          <li>配置 vitest.config.ts：<code>{ test: { environment: 'node', setupFiles: ['./src/test-setup.ts'] } }</code></li>
+          <li>test-setup.ts：连接测试 DB（TEST_DATABASE_URL），每个测试前清空相关表（truncate in transaction）</li>
+          <li>使用 Hono testClient：<code>const client = testClient(app)</code>（@hono/testing）</li>
+          <li>vaults.test.ts 用例：
+            <ul>
+              <li>GET /vaults — 空列表：mock auth，期望 <code>data: []</code></li>
+              <li>GET /vaults — 有数据：seed 一条 vault，期望返回正确 DTO</li>
+              <li>POST /vaults — 参数缺失：期望 400 + VALIDATION_ERROR</li>
+              <li>POST /vaults — 正常：期望 201 + vaultId + uploadUrl</li>
+            </ul>
+          </li>
+          <li>practice.test.ts 用例：
+            <ul>
+              <li>POST /practice/submit — 全对：score=100, wrongCount=0, WrongQuestion 表无新增</li>
+              <li>POST /practice/submit — 全错：score=0, wrongCount=N, WrongQuestion 表新增 N 条</li>
+              <li>POST /practice/submit — 50%：score=50, masteryUpdates 掌握度介于 0.1~0.5</li>
+            </ul>
+          </li>
+          <li>progress.test.ts 用例（next-step）：
+            <ul>
+              <li>study → 期望 practice</li>
+              <li>practice + masteryScore=0.50 → 期望 study</li>
+              <li>practice + masteryScore=0.75 → 期望 exam</li>
+              <li>exam + wrongCount&gt;0 → 期望 wrong</li>
+              <li>wrong + wrongCount=0 → 期望 exam</li>
+            </ul>
+          </li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr"><code>pnpm test</code> 全部通过（绿色）；覆盖率报告中核心路由行覆盖率 ≥ 70%</div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">所有被测路由和 service 已实现；测试 DB 已配置（TEST_DATABASE_URL 环境变量）</div></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="task-card">
+    <details>
+      <summary>
+        <input type="checkbox" class="chk" onclick="event.stopPropagation()">
+        <span class="tid">D-S4-003</span>
+        <span class="tname">wrong-archive.ts 改为 node-cron + 注册到启动流程</span>
+        <div class="tbadges">
+          <span class="btime">1h</span>
+          <span class="bai ai-claude">Claude Code</span>
+        </div>
+      </summary>
+      <div class="tbody">
+        <div class="trow"><span class="tl">📄 文件</span><div class="tr"><code>apps/api/src/jobs/wrong-archive.ts</code>、<code>apps/api/src/index.ts</code></div></div>
+        <div class="trow"><span class="tl">🔨 步骤</span><div class="tr"><ol>
+          <li>（D-S3-008 已用 node-cron 实现，本任务重点是集成验证）</li>
+          <li>在 index.ts 中确认 import：<code>import './jobs/wrong-archive'</code>（side-effect import，启动时自动注册 cron）</li>
+          <li>在 cron job 回调中添加起止日志：<code>logger.info('wrong-archive job started'); ... logger.info({ archived: result.count }, 'wrong-archive job completed')</code></li>
+          <li>添加错误处理：<code>try { ... } catch(e) { logger.error({ err: e }, 'wrong-archive job failed') }</code>（不让 cron 因单次失败停止）</li>
+          <li>在 SIGTERM 优雅关闭中停止 cron：<code>cronTask.stop()</code>（保存 cron.schedule 返回值）</li>
+          <li>暴露手动触发接口（仅开发环境）：<code>if (process.env.NODE_ENV === 'development') { app.post('/internal/trigger-archive', ...) }</code></li>
+        </ol></div></div>
+        <div class="trow"><span class="tl">✅ 验收</span><div class="tr">
+          启动服务后日志中出现 cron job 注册信息；
+          手动 POST /internal/trigger-archive 触发执行并打印 archived 数量；
+          SIGTERM 后 cron 停止不再触发
+        </div></div>
+        <div class="trow"><span class="tl">⚠️ 依赖</span><div class="tr">D-S3-008（wrong-archive 函数实现）、D-S0-001（index.ts + 优雅关闭）</div></div>
+      </div>
+    </details>
+  </div>
+</div>
