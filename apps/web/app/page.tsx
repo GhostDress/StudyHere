@@ -1,11 +1,19 @@
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+
 export default function Home() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    router.replace(token ? "/vault" : "/login")
+  }, [router])
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900">📚 StudyHere</h1>
-        <p className="mt-4 text-lg text-gray-600">帮你掌握任何知识和技能的 AI 学习闭环平台</p>
-        <p className="mt-2 text-sm text-gray-400">骨架已就绪，等待开发中...</p>
-      </div>
+    <main className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="text-slate-400 text-sm">正在跳转...</div>
     </main>
   )
 }
