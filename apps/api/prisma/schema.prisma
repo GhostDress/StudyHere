@@ -1,0 +1,154 @@
+// StudyHere 数据库 schema
+// 8 张表对应 MVP 核心功能：账号 / OTP / 文件 / 学习计划 / 闪卡 / 题目 / 答题记录 / 错题
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- 1. 用户 ----------
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vaults         Vault[]
+  plans          StudyPlan[]
+  answerRecords  AnswerRecord[]
+  wrongQuestions WrongQuestion[]
+
+  @@map("users")
+}
+
+// ---------- 2. 验证码 ----------
+model OTP {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, code])
+  @@map("otps")
+}
+
+// ---------- 3. 上传的资料 ----------
+enum VaultStatus {
+  pending
+  processing
+  done
+  failed
+}
+
+model Vault {
+  id          String      @id @default(uuid())
+  userId      String
+  filename    String
+  fileUrl     String
+  status      VaultStatus @default(pending)
+  textContent String?     @db.Text
+  errorMsg    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plans StudyPlan[]
+
+  @@index([userId])
+  @@map("vaults")
+}
+
+// ---------- 4. 学习计划 ----------
+model StudyPlan {
+  id        String   @id @default(uuid())
+  userId    String
+  vaultId   String
+  title     String
+  totalDays Int
+  planData  Json
+  createdAt DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vault      Vault       @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  flashcards Flashcard[]
+  questions  Question[]
+
+  @@index([userId])
+  @@index([vaultId])
+  @@map("study_plans")
+}
+
+// ---------- 5. 闪卡 ----------
+model Flashcard {
+  id       String @id @default(uuid())
+  planId   String
+  front    String @db.Text
+  back     String @db.Text
+  mastery  Int    @default(0)
+  dayIndex Int    @default(1)
+
+  plan StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId])
+  @@map("flashcards")
+}
+
+// ---------- 6. 题目 ----------
+model Question {
+  id          String @id @default(uuid())
+  planId      String
+  content     String @db.Text
+  options     Json
+  correct     String
+  explanation String @db.Text
+  dayIndex    Int    @default(1)
+
+  plan           StudyPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  answerRecords  AnswerRecord[]
+  wrongQuestions WrongQuestion[]
+
+  @@index([planId])
+  @@map("questions")
+}
+
+// ---------- 7. 答题记录 ----------
+model AnswerRecord {
+  id         String   @id @default(uuid())
+  userId     String
+  questionId String
+  userAnswer String
+  isCorrect  Boolean
+  answeredAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([questionId])
+  @@map("answer_records")
+}
+
+// ---------- 8. 错题本 ----------
+model WrongQuestion {
+  id          String   @id @default(uuid())
+  userId      String
+  questionId  String
+  wrongCount  Int      @default(1)
+  analysis    Json?
+  lastWrongAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId])
+  @@map("wrong_questions")
+}
