@@ -4,6 +4,9 @@ import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { logger } from "hono/logger"
 import authRoute from "./routes/auth.route"
+import vaultRoute from "./routes/vault.route"
+import planRoute from "./routes/plan.route"
+import practiceRoute from "./routes/practice.route"
 
 const app = new Hono()
 
@@ -16,6 +19,9 @@ app.use("*", cors({
 app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }))
 
 app.route("/api/auth", authRoute)
+app.route("/api/vault", vaultRoute)
+app.route("/api/plan", planRoute)
+app.route("/api", practiceRoute)
 
 const port = parseInt(process.env.PORT || "3001")
 console.log(`🚀 StudyHere API running on http://localhost:${port}`)
