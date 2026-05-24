@@ -1,18 +1,21 @@
 // ============================================================
-// C 对接点：AI 生成学习计划 / 闪卡 / 题目
+// C 模块：AI 生成学习计划 / 闪卡 / 题目
+// ------------------------------------------------------------
+// Provider：通过 lib/ai.ts 走 DeepSeek（兼容 OpenAI SDK）
+// 模型：deepseek-chat（默认，可在 .env 切换）
+// 核心策略：
+//   - 让 AI 输出 JSON（response_format=json_object）
+//   - 给 AI 明确的字段名、数量、约束，减少幻觉
+//   - 每个函数有 schema 校验，不信任 AI 输出
 // ============================================================
-// 实现要求：
-//   - 国内 AI 候选：DeepSeek / 通义千问 / Kimi（不能用 OpenAI）
-//   - DeepSeek API 兼容 OpenAI SDK，推荐优先使用
-//   - 环境变量：在 apps/api/.env 里填入对应 key
-//       DEEPSEEK_API_KEY=sk-xxx  或  DASHSCOPE_API_KEY=xxx
-// ============================================================
+
+import { chatJSON } from "../lib/ai"
 
 // ---------- 类型定义（与 fileProcessor.ts 里的 Mock 结构保持一致）----------
 
 export interface PlanDay {
   day: number
-  date: string          // "YYYY-MM-DD"
+  date: string
   topics: string[]
   goals: string[]
   estimatedMinutes: number
@@ -25,8 +28,8 @@ export interface StudyPlanResult {
 }
 
 export interface FlashcardResult {
-  front: string         // 问题面
-  back: string          // 答案面
+  front: string
+  back: string
 }
 
 export interface QuestionResult {
@@ -36,49 +39,132 @@ export interface QuestionResult {
   explanation: string
 }
 
-// ---------- 接口实现（C 填入）----------
+// ---------- 1. 生成学习计划 ----------
 
-/**
- * 根据文本内容生成 N 天学习计划
- *
- * @param textContent  parseFile 提取的纯文本
- * @param totalDays    计划天数（默认 14）
- * @returns            结构化学习计划
- */
 export async function generatePlan(
   textContent: string,
   totalDays: number,
 ): Promise<StudyPlanResult> {
-  // TODO by C：调用 AI API 生成学习计划
-  throw new Error(`generatePlan 尚未实现（totalDays=${totalDays}）`)
+  const today = new Date().toISOString().slice(0, 10)
+
+  const systemPrompt = `你是一位经验丰富的学习规划师。根据用户提供的学习材料，生成一份结构化的学习计划。
+要求：
+1. 必须输出合法 JSON，不要任何额外说明
+2. 计划必须基于材料的真实内容，不要编造材料里没有的主题
+3. 每天的内容量要均衡，由浅入深
+4. 日期从 ${today} 开始连续 ${totalDays} 天`
+
+  const userPrompt = `请为以下学习材料生成 ${totalDays} 天的学习计划。
+
+材料内容：
+"""
+${textContent}
+"""
+
+输出 JSON 格式：
+{
+  "title": "学习计划标题（基于材料主题）",
+  "totalDays": ${totalDays},
+  "days": [
+    {
+      "day": 1,
+      "date": "YYYY-MM-DD",
+      "topics": ["当天要学的主题1", "主题2"],
+      "goals": ["完成后能达到的目标1", "目标2"],
+      "estimatedMinutes": 60
+    }
+  ]
+}`
+
+  const result = await chatJSON<StudyPlanResult>(systemPrompt, userPrompt)
+
+  if (!result.days || !Array.isArray(result.days) || result.days.length === 0) {
+    throw new Error("generatePlan: AI 返回的 days 字段无效")
+  }
+  result.totalDays = result.days.length
+  return result
 }
 
-/**
- * 根据单天学习内容生成闪卡
- *
- * @param dayContent  当天的学习主题和目标拼接文本
- * @param count       生成数量（默认 10）
- * @returns           闪卡数组
- */
+// ---------- 2. 生成闪卡 ----------
+
 export async function generateFlashcards(
   dayContent: string,
   count: number,
 ): Promise<FlashcardResult[]> {
-  // TODO by C：调用 AI API 生成闪卡
-  throw new Error(`generateFlashcards 尚未实现（count=${count}）`)
+  const systemPrompt = `你是一位记忆训练专家。根据学习内容生成用于主动回忆的闪卡（问答对）。
+要求：
+1. 必须输出合法 JSON，不要任何额外说明
+2. front 是问题，要具体不要泛泛而问
+3. back 是答案，要精准简短，1-3 句话
+4. 不要出"什么是 X"这种死记硬背的题，多出"为什么/怎么做/区别"`
+
+  const userPrompt = `请基于以下学习内容，生成 ${count} 张闪卡。
+
+学习内容：
+"""
+${dayContent}
+"""
+
+输出 JSON 格式：
+{
+  "cards": [
+    { "front": "问题", "back": "答案" }
+  ]
+}`
+
+  const result = await chatJSON<{ cards: FlashcardResult[] }>(
+    systemPrompt,
+    userPrompt,
+  )
+
+  if (!result.cards || !Array.isArray(result.cards)) {
+    throw new Error("generateFlashcards: AI 返回的 cards 字段无效")
+  }
+  return result.cards.slice(0, count)
 }
 
-/**
- * 根据单天学习内容生成选择题
- *
- * @param dayContent  当天的学习主题和目标拼接文本
- * @param count       生成数量（默认 5）
- * @returns           题目数组
- */
+// ---------- 3. 生成选择题 ----------
+
 export async function generateQuestions(
   dayContent: string,
   count: number,
 ): Promise<QuestionResult[]> {
-  // TODO by C：调用 AI API 生成选择题
-  throw new Error(`generateQuestions 尚未实现（count=${count}）`)
+  const systemPrompt = `你是一位资深出题老师。根据学习内容出选择题，用于检验学习效果。
+要求：
+1. 必须输出合法 JSON，不要任何额外说明
+2. 题目要考察理解和应用，不是简单的事实记忆
+3. 4 个选项必须有干扰性，错误选项要看起来合理但有明确错误
+4. correct 字段只能是 "A" / "B" / "C" / "D"
+5. explanation 要解释为什么正确选项对、其他选项错在哪`
+
+  const userPrompt = `请基于以下学习内容，出 ${count} 道四选一选择题。
+
+学习内容：
+"""
+${dayContent}
+"""
+
+输出 JSON 格式：
+{
+  "questions": [
+    {
+      "content": "题干",
+      "options": { "A": "选项A", "B": "选项B", "C": "选项C", "D": "选项D" },
+      "correct": "A",
+      "explanation": "解析"
+    }
+  ]
+}`
+
+  const result = await chatJSON<{ questions: QuestionResult[] }>(
+    systemPrompt,
+    userPrompt,
+  )
+
+  if (!result.questions || !Array.isArray(result.questions)) {
+    throw new Error("generateQuestions: AI 返回的 questions 字段无效")
+  }
+  return result.questions
+    .filter((q) => ["A", "B", "C", "D"].includes(q.correct))
+    .slice(0, count)
 }
