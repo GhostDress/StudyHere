@@ -4,13 +4,8 @@ import path from "node:path"
 import { prisma } from "../lib/prisma"
 import { supabaseAdmin, STORAGE_BUCKET } from "../lib/supabase"
 
-// =====================================================
-// C 的 AI 服务对接点（联调时由 C 实现这些函数，
-// 在 apps/api/src/services/ 下放入对应 .ts，然后取消下面的注释）
-// =====================================================
-// import { parseFile } from "../services/parser.service"
-// import { generatePlan, generateFlashcards, generateQuestions } from "../services/plan.service"
-// =====================================================
+import { parseFile } from "../services/parser.service"
+import { generatePlan, generateFlashcards, generateQuestions } from "../services/plan.service"
 
 const DEFAULT_PLAN_DAYS = 14
 const FLASHCARDS_PER_DAY = 10
@@ -67,9 +62,9 @@ export async function processVault(vaultId: string): Promise<void> {
     await writeFile(tmpFilePath, buffer)
     console.log(`[Worker] 文件已下载到: ${tmpFilePath} (${buffer.length} bytes)`)
 
-    // 4. 提取文字内容（C 联调时接入）
-    // const textContent = await parseFile(tmpFilePath, blob.type)
-    const textContent = await mockParseFile(tmpFilePath, vault.filename)
+    // 4. 提取文字内容
+    const mimeType = blob.type || guessMimeByFilename(vault.filename)
+    const textContent = await parseFile(tmpFilePath, mimeType)
     console.log(`[Worker] 解析完成，文字长度: ${textContent.length}`)
 
     await prisma.vault.update({
@@ -77,9 +72,8 @@ export async function processVault(vaultId: string): Promise<void> {
       data: { textContent },
     })
 
-    // 5. 生成学习计划（C 联调时接入）
-    // const plan = await generatePlan(textContent, DEFAULT_PLAN_DAYS)
-    const plan = mockGeneratePlan(textContent, DEFAULT_PLAN_DAYS, vault.filename)
+    // 5. 生成学习计划
+    const plan = await generatePlan(textContent, DEFAULT_PLAN_DAYS)
 
     const studyPlan = await prisma.studyPlan.create({
       data: {
@@ -92,12 +86,11 @@ export async function processVault(vaultId: string): Promise<void> {
     })
     console.log(`[Worker] 学习计划已创建: ${studyPlan.id}`)
 
-    // 6. 逐天生成闪卡 + 题目（C 联调时接入）
+    // 6. 逐天生成闪卡 + 题目
     for (const day of plan.days) {
       const dayContent = `${day.topics.join("、")}：${day.goals.join("；")}`
 
-      // const flashcards = await generateFlashcards(dayContent, FLASHCARDS_PER_DAY)
-      const flashcards = mockGenerateFlashcards(dayContent, FLASHCARDS_PER_DAY)
+      const flashcards = await generateFlashcards(dayContent, FLASHCARDS_PER_DAY)
       if (flashcards.length > 0) {
         await prisma.flashcard.createMany({
           data: flashcards.map((f) => ({
@@ -109,8 +102,7 @@ export async function processVault(vaultId: string): Promise<void> {
         })
       }
 
-      // const questions = await generateQuestions(dayContent, QUESTIONS_PER_DAY)
-      const questions = mockGenerateQuestions(dayContent, QUESTIONS_PER_DAY)
+      const questions = await generateQuestions(dayContent, QUESTIONS_PER_DAY)
       if (questions.length > 0) {
         await prisma.question.createMany({
           data: questions.map((q) => ({
@@ -155,81 +147,12 @@ function extractObjectPath(publicUrl: string): string | null {
   return publicUrl.slice(idx + marker.length)
 }
 
-// =====================================================
-// Mock 实现（联调前用，C 接入后会被真实 AI 函数取代）
-// =====================================================
-
-async function mockParseFile(_filePath: string, filename: string): Promise<string> {
-  console.log(`[Mock] parseFile 占位实现 - 等 C 接入真实 parser`)
-  return `[MOCK] ${filename} 的解析占位内容。联调时由 C 的 parseFile 提供真实文字。`
-}
-
-interface MockPlanDay {
-  day: number
-  date: string
-  topics: string[]
-  goals: string[]
-  estimatedMinutes: number
-}
-
-interface MockPlan {
-  title: string
-  totalDays: number
-  days: MockPlanDay[]
-}
-
-function mockGeneratePlan(_content: string, days: number, filename: string): MockPlan {
-  console.log(`[Mock] generatePlan 占位实现 - 等 C 接入 OpenAI`)
-  const today = new Date()
-  const planDays: MockPlanDay[] = Array.from({ length: days }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(d.getDate() + i)
-    return {
-      day: i + 1,
-      date: d.toISOString().slice(0, 10),
-      topics: [`Day ${i + 1} 主题占位`],
-      goals: [`完成 Day ${i + 1} 内容学习（占位）`],
-      estimatedMinutes: 60,
-    }
-  })
-  return {
-    title: `${filename.replace(/\.[^.]+$/, "")} · 学习计划（占位）`,
-    totalDays: days,
-    days: planDays,
-  }
-}
-
-interface MockFlashcard {
-  front: string
-  back: string
-}
-
-function mockGenerateFlashcards(content: string, count: number): MockFlashcard[] {
-  console.log(`[Mock] generateFlashcards 占位实现 - 等 C 接入`)
-  return Array.from({ length: count }, (_, i) => ({
-    front: `[占位] ${content.slice(0, 20)} - 问题 ${i + 1}`,
-    back: `[占位] 联调后由 C 的 AI 生成真实答案`,
-  }))
-}
-
-interface MockQuestion {
-  content: string
-  options: { A: string; B: string; C: string; D: string }
-  correct: "A" | "B" | "C" | "D"
-  explanation: string
-}
-
-function mockGenerateQuestions(content: string, count: number): MockQuestion[] {
-  console.log(`[Mock] generateQuestions 占位实现 - 等 C 接入`)
-  return Array.from({ length: count }, (_, i) => ({
-    content: `[占位题目 ${i + 1}] 关于 ${content.slice(0, 20)} 的内容，下列说法正确的是？`,
-    options: {
-      A: "占位选项 A",
-      B: "占位选项 B",
-      C: "占位选项 C",
-      D: "占位选项 D",
-    },
-    correct: "A" as const,
-    explanation: "[占位] 联调后由 C 的 AI 生成真实解析",
-  }))
+// 根据文件名猜测 MIME 类型（兜底）
+function guessMimeByFilename(filename: string): string {
+  const ext = filename.split(".").pop()?.toLowerCase()
+  if (ext === "pdf") return "application/pdf"
+  if (ext === "docx") return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  if (ext === "doc") return "application/msword"
+  if (ext === "txt") return "text/plain"
+  return "application/octet-stream"
 }
