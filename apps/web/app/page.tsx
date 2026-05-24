@@ -1,11 +1,56 @@
-export default function Home() {
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import LandingNavbar from "@/components/landing/Navbar"
+import LandingHero from "@/components/landing/Hero"
+import LandingPainPoints from "@/components/landing/PainPoints"
+import LandingFeatures from "@/components/landing/Features"
+import LandingSocialProof from "@/components/landing/SocialProof"
+import LandingCompare from "@/components/landing/Compare"
+import LandingFaq from "@/components/landing/Faq"
+import LandingFooter from "@/components/landing/Footer"
+import { trackLandingEvent } from "@/lib/analytics"
+
+export default function RootPage() {
+  const router = useRouter()
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    // JWT 鉴权：已登录用户直接跳 /home
+    const token = localStorage.getItem("token")
+    if (token) {
+      router.replace("/home")
+      return
+    }
+
+    // 落地页访问埋点
+    trackLandingEvent("landing_page_view", {
+      isFirstVisit: !sessionStorage.getItem("landing_visited"),
+      utm_source: new URLSearchParams(window.location.search).get("utm_source"),
+    })
+    sessionStorage.setItem("landing_visited", "1")
+
+    setReady(true)
+  }, [router])
+
+  if (!ready) {
+    // 鉴权检查期间显示空白，避免 Landing 内容闪现给已登录用户
+    return <main className="min-h-screen bg-white" />
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900">📚 StudyHere</h1>
-        <p className="mt-4 text-lg text-gray-600">帮你掌握任何知识和技能的 AI 学习闭环平台</p>
-        <p className="mt-2 text-sm text-gray-400">骨架已就绪，等待开发中...</p>
-      </div>
+    <main className="min-h-screen bg-white">
+      <LandingNavbar />
+      <LandingHero />
+      <LandingPainPoints />
+      <LandingFeatures />
+      <LandingSocialProof />
+      <LandingCompare />
+      <LandingFaq />
+      <LandingFooter />
     </main>
   )
 }
