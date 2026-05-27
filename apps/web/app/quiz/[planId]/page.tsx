@@ -770,6 +770,7 @@ export default function QuizPage() {
           <AnswerExplanation
             result={result}
             question={question}
+            topic={dayTopics[question.dayIndex] || ""}
             onNext={handleNext}
             isLast={index >= questions.length - 1}
           />
@@ -784,11 +785,13 @@ export default function QuizPage() {
 function AnswerExplanation({
   result,
   question,
+  topic,
   onNext,
   isLast,
 }: {
   result: AnswerResponse
   question: Question
+  topic: string
   onNext: () => void
   isLast: boolean
 }) {
@@ -869,7 +872,7 @@ function AnswerExplanation({
       <CredibilityBlock
         dayIndex={question.dayIndex}
         sourceText={firstLine}
-        topic={dayTopics[question.dayIndex] || ""}
+        topic={topic}
       />
 
       <button onClick={onNext} className="mt-5 nt-btn-primary">
