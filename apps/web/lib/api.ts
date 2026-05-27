@@ -35,8 +35,127 @@ import {
   mockWrongQuestions,
 } from "./mockData"
 import { USE_MOCK, delay, makeMockToken } from "./mockMode"
+import {
+  detectSubject,
+  generateFlashcards as engineGenerateFlashcards,
+  generateFlashcardCards,
+  generateQuestions as engineGenerateQuestions,
+  getTopicForDay,
+  getGoalForDay,
+  type Personality,
+  type FlashcardCard,
+} from "./mockContentEngine"
+import { getActivePersonality } from "./sandboxStore"
+import type { AgentPersonality } from "./types"
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+// v2.2 mock 期：题目运行时缓存（让 answer 能找到动态生成的题）
+const dynamicQuestionCache = new Map<string, {
+  id: string
+  content: string
+  options: { A: string; B: string; C: string; D: string }
+  correct: string
+  explanation: string
+  dayIndex: number
+  type?: "single" | "multi" | "true-false-explain"
+  reasonKeywords?: string[]
+}>()
+
+/**
+ * v2.2.1 mock：基于 planId → 找 vault → 当前激活人格
+ * 通过 mockContentEngine 动态生成跟资料 + 人格匹配的闪卡
+ * 注意：闪卡 ID 包含 personality，不同沙箱的同位置闪卡 ID 不同
+ */
+function generateDynamicFlashcardsForPlan(planId: string) {
+  const plan = mockPlans.find((p) => p.id === planId)
+  if (!plan) return []
+  const vault = mockVaultStore.find((v) => v.id === plan.vaultId)
+  if (!vault) return []
+
+  const personality: Personality =
+    (getActivePersonality(vault.id) as Personality) || "student"
+
+  const subject = detectSubject(vault.filename)
+  const result: Array<{
+    id: string
+    planId: string
+    personality: AgentPersonality
+    front: string
+    back: string
+    dayIndex: number
+    mastery: number
+    createdAt: string
+    card: FlashcardCard
+  }> = []
+
+  // 给前 3 天各生成 3-4 张
+  for (let day = 1; day <= Math.min(plan.totalDays, 3); day++) {
+    // 同时取结构化版本 + 文本版本（兼容老逻辑）
+    const structured = generateFlashcardCards(subject, personality, day)
+    const flat = engineGenerateFlashcards(subject, personality, day)
+    structured.forEach((card, i) => {
+      const flatItem = flat[i]
+      result.push({
+        id: `fc-${planId}-${personality}-${day}-${i}`,
+        planId,
+        personality,
+        front: card.question, // 用结构化版本的 question
+        back: flatItem?.back ?? card.answer.definition, // 兼容
+        dayIndex: day,
+        mastery: 0,
+        createdAt: new Date().toISOString(),
+        card,  // ← 结构化数据，前端用这个渲染
+      })
+    })
+  }
+  return result
+}
+
+function generateDynamicQuestionsForPlan(planId: string) {
+  const plan = mockPlans.find((p) => p.id === planId)
+  if (!plan) return []
+  const vault = mockVaultStore.find((v) => v.id === plan.vaultId)
+  if (!vault) return []
+
+  const personality: Personality =
+    (getActivePersonality(vault.id) as Personality) || "student"
+
+  const subject = detectSubject(vault.filename)
+  const result: Array<{
+    id: string
+    personality: AgentPersonality
+    type: "single" | "multi" | "true-false-explain"
+    content: string
+    options: { A: string; B: string; C: string; D: string }
+    correct: string
+    explanation: string
+    dayIndex: number
+    reasonKeywords?: string[]
+  }> = []
+
+  for (let day = 1; day <= Math.min(plan.totalDays, 3); day++) {
+    const qs = engineGenerateQuestions(subject, personality, day)
+    qs.forEach((q, i) => {
+      const item = {
+        id: `q-${planId}-${personality}-${day}-${i}`,
+        personality,
+        type: q.type,
+        content: q.content,
+        options: q.options,
+        correct: q.correct,
+        explanation: q.explanation,
+        dayIndex: day,
+        reasonKeywords: q.reasonKeywords,
+      }
+      dynamicQuestionCache.set(item.id, item)
+      result.push(item)
+    })
+  }
+  return result
+}
+
+// v2.2：BASE_URL 为空时走相对路径 ""，由 next.config.js 的 rewrites 代理到生产
+// 这样可以绕开浏览器 CORS（生产服务器 CORS 只允许 EdgeOne 域名）
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
 
 const http = axios.create({ baseURL: BASE_URL })
 
@@ -172,6 +291,28 @@ export const planApi = {
   async get(_id: string): Promise<PlanDetailResponse> {
     if (USE_MOCK) {
       await delay()
+      // v2.2 mock：基于 planId 找对应 plan，days 主题用 mockContentEngine 拟真
+      const p = mockPlans.find((x) => x.id === _id)
+      if (p) {
+        const v = mockVaultStore.find((x) => x.id === p.vaultId)
+        const subject = detectSubject(v?.filename ?? "")
+        return {
+          plan: {
+            ...p,
+            planData: {
+              title: p.title,
+              totalDays: p.totalDays,
+              days: Array.from({ length: p.totalDays }, (_, i) => ({
+                day: i + 1,
+                date: new Date(Date.now() + i * 86400000).toISOString().slice(0, 10),
+                topics: [getTopicForDay(subject, i + 1)],
+                goals: [getGoalForDay(subject, i + 1)],
+                estimatedMinutes: 60,
+              })),
+            },
+          },
+        }
+      }
       return { plan: mockPlanDetail }
     }
     const res = await http.get<PlanDetailResponse>(`/api/plan/${_id}`)
@@ -182,7 +323,19 @@ export const planApi = {
     if (USE_MOCK) {
       await delay(200)
       const vault = mockVaultStore.find((v) => v.id === id)
-      const planFound = mockPlans.find((p) => p.vaultId === id)
+      let planFound = mockPlans.find((p) => p.vaultId === id)
+      // v2.2：mock 模式下，已 done 但还没生成计划的 vault 自动给它生成一个 plan
+      // 这样 /loading/[vaultId] 轮询到 done 时能拿到 planId
+      if (vault?.status === "done" && !planFound) {
+        planFound = {
+          id: `pln-${id}`,
+          title: `${vault.filename.replace(/\.[^.]+$/, "")} · 学习计划`,
+          totalDays: 14,
+          vaultId: id,
+          createdAt: new Date().toISOString(),
+        }
+        mockPlans.unshift(planFound)
+      }
       return {
         vaultId: id,
         planId: planFound?.id,
@@ -203,6 +356,10 @@ export const flashcardApi = {
   async list(planId: string): Promise<FlashcardListResponse> {
     if (USE_MOCK) {
       await delay()
+      // v2.2：基于 plan→vault.filename + 用户选的人格动态生成闪卡
+      const dynamic = generateDynamicFlashcardsForPlan(planId)
+      if (dynamic.length > 0) return { flashcards: dynamic }
+      // 兜底：回到 hardcoded mock
       return { flashcards: mockFlashcards.filter((f) => f.planId === planId) }
     }
     const res = await http.get<FlashcardListResponse>("/api/flashcard", {
@@ -231,31 +388,93 @@ export const flashcardApi = {
 // ============================================================
 
 export const questionApi = {
-  async list(_planId: string): Promise<QuestionListResponse> {
+  /**
+   * v2.2.1：scope 参数支持 3 档过滤
+   *   - undefined / 'all'  : 全计划题目（默认）
+   *   - 'today'            : 仅今日学过的 dayIndex
+   *   - 'studied'          : 累计已学的所有 dayIndex
+   *
+   * todayDayIndexes / studiedDayIndexes 由前端从沙箱反推后传入
+   */
+  async list(
+    _planId: string,
+    options?: {
+      scope?: "today" | "studied" | "all"
+      dayIndexes?: number[]  // 若 scope=today/studied，传入要保留的 dayIndex
+    },
+  ): Promise<QuestionListResponse> {
     if (USE_MOCK) {
       await delay()
-      return { questions: [...mockQuestions] }
+      const dynamic = generateDynamicQuestionsForPlan(_planId)
+      let questions = dynamic.length > 0 ? dynamic : [...mockQuestions]
+
+      // v2.2.1：按 scope 过滤
+      if (options?.scope === "today" || options?.scope === "studied") {
+        const allowDays = new Set(options.dayIndexes ?? [])
+        if (allowDays.size > 0) {
+          questions = questions.filter((q) => allowDays.has(q.dayIndex))
+        } else {
+          // 没有传 dayIndexes（用户还没学）→ 返回空，让 UI 提示
+          questions = []
+        }
+      }
+
+      return { questions }
     }
     const res = await http.get<QuestionListResponse>("/api/question", {
-      params: { planId: _planId },
+      params: { planId: _planId, scope: options?.scope },
     })
     return res.data
   },
 
-  async answer(questionId: string, userAnswer: string): Promise<AnswerResponse> {
+  async answer(
+    questionId: string,
+    userAnswer: string,
+    reason?: string,
+  ): Promise<AnswerResponse> {
     if (USE_MOCK) {
       await delay(300)
-      const q = mockQuestions.find((x) => x.id === questionId)
+      const dyn = dynamicQuestionCache.get(questionId)
+      const q = (dyn ?? mockQuestions.find((x) => x.id === questionId)) as
+        | { correct: string; explanation: string; reasonKeywords?: string[]; type?: string }
+        | undefined
       if (!q) throw new Error("题目不存在")
+
+      // v2.2.1：按题型评判
+      let isCorrect = false
+      let reasonScore: number | undefined
+
+      if (q.type === "multi") {
+        // 多选：选项集合完全相同才算对（顺序无关）
+        const userSet = new Set(userAnswer.split(",").filter(Boolean))
+        const correctSet = new Set(q.correct.split(",").filter(Boolean))
+        isCorrect =
+          userSet.size === correctSet.size &&
+          Array.from(userSet).every((x) => correctSet.has(x))
+      } else if (q.type === "true-false-explain") {
+        // 判断+理由：T/F 答对 + 理由中含至少 1 个关键词
+        const tfCorrect = q.correct === userAnswer
+        const kws = q.reasonKeywords ?? []
+        const hitCount = kws.filter((k) => reason?.includes(k)).length
+        reasonScore = kws.length > 0 ? Math.min(hitCount / kws.length, 1) : 1
+        // 严苛教练：T/F 对 + 理由含 ≥ 1 个关键词
+        isCorrect = tfCorrect && hitCount >= 1
+      } else {
+        // single
+        isCorrect = q.correct === userAnswer
+      }
+
       return {
-        isCorrect: q.correct === userAnswer,
+        isCorrect,
         correctAnswer: q.correct,
         explanation: q.explanation,
+        reasonScore,
       }
     }
     const res = await http.post<AnswerResponse>("/api/answer", {
       questionId,
       userAnswer,
+      reason,
     })
     return res.data
   },

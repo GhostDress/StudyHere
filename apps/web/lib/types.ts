@@ -64,11 +64,15 @@ export interface VaultDetailResponse {
 
 // ---------- 学习计划 ----------
 
+// v2.2.1：智能体人格（学习沙箱维度）
+export type AgentPersonality = "student" | "cert" | "explorer" | "strict"
+
 export interface StudyPlan {
   id: string
   title: string
   totalDays: number
   vaultId: string
+  personality?: AgentPersonality  // v2.2.1 新增：每个 plan 属于一个人格沙箱
   createdAt: string
   planData?: unknown
 }
@@ -93,11 +97,14 @@ export interface PlanStatusResponse {
 export interface Flashcard {
   id: string
   planId: string
+  personality?: AgentPersonality  // v2.2.1 新增
   front: string
   back: string
   dayIndex: number
   mastery: number
   createdAt: string
+  // v2.2.1：结构化卡片数据（含人格 + 学习理论），前端按 personality 渲染
+  card?: import("./mockContentEngine").FlashcardCard
 }
 
 export interface FlashcardListResponse {
@@ -119,13 +126,29 @@ export interface QuestionOptions {
 
 export type AnswerKey = "A" | "B" | "C" | "D"
 
+// v2.2.1：题型 —— 按人格教育学理论分化
+//   single        : 单选（学生党/考证型用）
+//   multi         : 多选（兴趣探索用 - 对应远距离迁移）
+//   true-false-explain : 判断+理由（严苛教练用 - 对应生成效应）
+export type QuestionType = "single" | "multi" | "true-false-explain"
+
 export interface Question {
   id: string
+  personality?: AgentPersonality  // v2.2.1 新增
+  type?: QuestionType             // v2.2.1：默认 single 向后兼容
   content: string
   options: QuestionOptions
-  correct: AnswerKey
+  /**
+   * 正确答案：
+   *   single             → "A" / "B" / "C" / "D"
+   *   multi              → "A,B" / "B,C,D" 等逗号分隔
+   *   true-false-explain → "T" / "F"（content 是一个陈述句）
+   */
+  correct: string
   explanation: string
   dayIndex: number
+  /** 严苛教练判断题用：参考"理由"作答的关键词，用户输入后做轻量匹配 */
+  reasonKeywords?: string[]
 }
 
 export interface QuestionListResponse {
@@ -134,8 +157,11 @@ export interface QuestionListResponse {
 
 export interface AnswerResponse {
   isCorrect: boolean
-  correctAnswer: AnswerKey
+  /** single: "A"; multi: "A,B,C"; tf-explain: "T"/"F" */
+  correctAnswer: string
   explanation: string
+  /** 严苛教练题：用户提交的理由是否包含足够关键词 */
+  reasonScore?: number  // 0-1
 }
 
 // ---------- 错题本 ----------
@@ -144,6 +170,7 @@ export interface WrongQuestion {
   id: string
   userId: string
   questionId: string
+  personality?: AgentPersonality  // v2.2.1 新增：错于哪个人格
   wrongCount: number
   lastWrongAt: string
   question: {
