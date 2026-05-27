@@ -110,6 +110,20 @@ function emptySandbox(): SandboxData {
   }
 }
 
+// 把老 localStorage 沙箱数据补齐到当前 schema —— 新加字段必须在这里加显式兜底
+function normalizeSandbox(raw: Partial<SandboxData> | undefined): SandboxData {
+  const empty = emptySandbox()
+  if (!raw) return empty
+  return {
+    ...empty,
+    ...raw,
+    flashcardMastery: raw.flashcardMastery ?? {},
+    answerRecords: raw.answerRecords ?? {},
+    wrongQuestionIds: raw.wrongQuestionIds ?? [],
+    wrongQuestionMeta: raw.wrongQuestionMeta ?? {},
+  }
+}
+
 const SANDBOX_KEY = "vault_sandbox_data"
 
 function loadAll(): Record<string, SandboxData> {
@@ -138,7 +152,7 @@ export function getSandbox(
   personality: AgentPersonality,
 ): SandboxData {
   const all = loadAll()
-  return all[sandboxKey(vaultId, personality)] ?? emptySandbox()
+  return normalizeSandbox(all[sandboxKey(vaultId, personality)])
 }
 
 /**
@@ -151,7 +165,7 @@ export function updateSandbox(
 ): void {
   const all = loadAll()
   const k = sandboxKey(vaultId, personality)
-  const current = all[k] ?? emptySandbox()
+  const current = normalizeSandbox(all[k])
   all[k] = updater(current)
   saveAll(all)
 }
@@ -230,7 +244,7 @@ export function recordAnswer(
   isCorrect: boolean,
 ): void {
   updateSandbox(vaultId, personality, (s) => {
-    const meta = { ...(s.wrongQuestionMeta[questionId] ?? null) } as Partial<
+    const meta = { ...(s.wrongQuestionMeta?.[questionId] ?? null) } as Partial<
       SandboxData["wrongQuestionMeta"][string]
     >
     const newWrongIds = new Set(s.wrongQuestionIds)
