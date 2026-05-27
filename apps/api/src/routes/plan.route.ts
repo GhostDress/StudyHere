@@ -67,8 +67,14 @@ plan.get("/:id/status", async (c) => {
   })
 
   if (vault) {
+    // 若 AI 已生成完计划，一并返回 planId，前端才能跳转到 /plan-confirm/:planId
+    const plan = await prisma.studyPlan.findFirst({
+      where: { vaultId: vault.id, userId: user.userId },
+      select: { id: true },
+    })
     return c.json({
       vaultId: vault.id,
+      planId: plan?.id,
       status: vault.status,
       errorMsg: vault.errorMsg,
     })
