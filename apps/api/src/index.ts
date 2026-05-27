@@ -7,6 +7,7 @@ import authRoute from "./routes/auth.route"
 import vaultRoute from "./routes/vault.route"
 import planRoute from "./routes/plan.route"
 import practiceRoute from "./routes/practice.route"
+import { startSrsCron } from "./workers/srsNotifier"
 
 const app = new Hono()
 
@@ -33,3 +34,6 @@ const port = parseInt(process.env.PORT || "3001")
 console.log(`🚀 StudyHere API running on http://localhost:${port}`)
 
 serve({ fetch: app.fetch, port })
+
+// 启动 SRS 每日提醒 Cron（A-002）
+startSrsCron()
