@@ -382,7 +382,13 @@ export default function FlashcardPage() {
             {/* 答案区（核心） */}
             <div className="mt-6">
               {card?.card ? (
-                <FlashcardAnswerCard card={card.card} dayIndex={card.dayIndex} />
+                <FlashcardAnswerCard
+                  card={card.card}
+                  dayIndex={card.dayIndex}
+                  vaultId={vaultId}
+                  personality={getActivePersonality(vaultId) || "student"}
+                  flashcardId={card.id}
+                />
               ) : (
                 <p className="text-[18px] text-[#37352f] leading-[1.7] font-medium">
                   {card?.back}
@@ -501,7 +507,13 @@ function ReviewListItem({
           {/* 答案区域 */}
           {fullCard.card ? (
             <div className="mb-4">
-              <FlashcardAnswerCard card={fullCard.card} dayIndex={fullCard.dayIndex} />
+              <FlashcardAnswerCard
+                card={fullCard.card}
+                dayIndex={fullCard.dayIndex}
+                vaultId={vaultId}
+                personality={getActivePersonality(vaultId) || "student"}
+                flashcardId={fullCard.id}
+              />
             </div>
           ) : (
             <p className="text-[14px] text-[#37352f] leading-[1.7] mb-4">

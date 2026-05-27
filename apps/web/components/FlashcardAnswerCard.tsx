@@ -15,11 +15,17 @@ import {
   ChevronDown,
 } from "lucide-react"
 import type { FlashcardCard } from "@/lib/mockContentEngine"
+import type { AgentPersonality } from "@/lib/types"
+import FeedbackButton from "@/components/FeedbackButton"
 
 interface Props {
   card: FlashcardCard
   /** 用于来源溯源展示 */
   dayIndex?: number
+  /** v2.3：报错按钮所需 */
+  vaultId?: string
+  personality?: AgentPersonality
+  flashcardId?: string
 }
 
 /**
@@ -35,8 +41,14 @@ interface Props {
  */
 const CREDIBILITY_GUIDE_KEY = "studyhere_credibility_guide_seen"
 
-export default function FlashcardAnswerCard({ card, dayIndex }: Props) {
-  const { personality, answer, theory, credibility } = card
+export default function FlashcardAnswerCard({
+  card,
+  dayIndex,
+  vaultId,
+  personality,
+  flashcardId,
+}: Props) {
+  const { personality: cardPersonality, answer, theory, credibility } = card
   // v2.2.1：可信度区默认折叠
   const [showCredibility, setShowCredibility] = useState(false)
   // 手风琴模式：严苛教练反问只能同时展开一个
@@ -136,7 +148,7 @@ export default function FlashcardAnswerCard({ card, dayIndex }: Props) {
       </div>
 
       {/* 2. 按人格渲染特色区块 —— 降级为辅助内容 */}
-      {personality === "student" && (
+      {cardPersonality === "student" && (
         <>
           {answer.example && (
             <Section Icon={Lightbulb} label="举个栗子" color="#c25a14" bg="#fff3e9">
@@ -155,7 +167,7 @@ export default function FlashcardAnswerCard({ card, dayIndex }: Props) {
         </>
       )}
 
-      {personality === "cert" && (
+      {cardPersonality === "cert" && (
         <>
           {answer.examFrequency && (
             <FrequencyBadge frequency={answer.examFrequency} />
@@ -177,7 +189,7 @@ export default function FlashcardAnswerCard({ card, dayIndex }: Props) {
         </>
       )}
 
-      {personality === "explorer" && (
+      {cardPersonality === "explorer" && (
         <>
           {answer.crossDomain && (
             <Section Icon={GitBranch} label="跨学科类比" color="#c25a14" bg="#fff3e9">
@@ -201,7 +213,7 @@ export default function FlashcardAnswerCard({ card, dayIndex }: Props) {
         </>
       )}
 
-      {personality === "strict" &&
+      {cardPersonality === "strict" &&
         answer.socraticQuestions &&
         answer.socraticQuestions.length > 0 && (
           <div className="mt-4">
@@ -307,6 +319,18 @@ export default function FlashcardAnswerCard({ card, dayIndex }: Props) {
                 <span className="text-[14px]">←</span>
                 <span>点击查看原文 / 权威引用</span>
               </span>
+            )}
+
+            {/* v2.3：报错按钮（右对齐）*/}
+            {vaultId && personality && flashcardId && (
+              <div className="ml-auto">
+                <FeedbackButton
+                  vaultId={vaultId}
+                  personality={personality}
+                  itemId={flashcardId}
+                  itemType="flashcard"
+                />
+              </div>
             )}
           </div>
 
