@@ -138,7 +138,7 @@ interface FlashcardTemplate {
 export type QType = "single" | "multi" | "true-false-explain"
 
 export interface QuestionTemplate {
-  type: QType
+  type?: QType   // defaults to "single" when omitted
   content: string
   options: { A: string; B: string; C: string; D: string }
   /** single→"A"; multi→"A,B"; tf→"T"/"F" */
@@ -608,6 +608,7 @@ export function generateQuestions(
     // 兜底：生成一个通用题
     return [
       {
+        type: "single" as QType,
         content: `关于「${topic}」，下列说法正确的是？`,
         options: {
           A: `${topic}没有标准定义`,

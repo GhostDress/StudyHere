@@ -17,7 +17,7 @@ import { getActivePersonality, recordAnswer, getStudiedDays } from "@/lib/sandbo
 
 interface AnswerRecord {
   questionId: string
-  picked: AnswerKey
+  picked: string   // "A" | "A,B" | "T" etc. (supports single / multi / tf)
   result: AnswerResponse
 }
 
@@ -317,7 +317,7 @@ export default function QuizPage() {
               </div>
               <div className="space-y-2">
                 {Object.entries(dayStats)
-                  .map(([d, s]) => ({ day: parseInt(d, 10), ...s }))
+                  .map(([d, s]) => ({ day: parseInt(d, 10), ...s, rate: Math.round((s.correct / s.total) * 100) }))
                   .sort((a, b) => a.day - b.day)
                   .map(({ day, total, correct, rate, topic }) => (
                     <div

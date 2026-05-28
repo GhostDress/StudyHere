@@ -67,6 +67,14 @@ export interface VaultDetailResponse {
 // v2.2.1：智能体人格（学习沙箱维度）
 export type AgentPersonality = "student" | "cert" | "explorer" | "strict"
 
+export interface PlanDay {
+  day: number
+  date: string
+  estimatedMinutes: number
+  topics?: string[]
+  goals?: string[]
+}
+
 export interface StudyPlan {
   id: string
   title: string
@@ -74,7 +82,7 @@ export interface StudyPlan {
   vaultId: string
   personality?: AgentPersonality  // v2.2.1 新增：每个 plan 属于一个人格沙箱
   createdAt: string
-  planData?: unknown
+  planData?: { title?: string; totalDays?: number; days?: PlanDay[] }
 }
 
 export interface PlanListResponse {

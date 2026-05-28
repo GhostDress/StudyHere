@@ -138,7 +138,7 @@ function generateDynamicQuestionsForPlan(planId: string) {
       const item = {
         id: `q-${planId}-${personality}-${day}-${i}`,
         personality,
-        type: q.type,
+        type: q.type ?? "single",
         content: q.content,
         options: q.options,
         correct: q.correct,
