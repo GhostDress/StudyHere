@@ -1,18 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // v2.2 本地开发：把 /api/* 代理到生产后端，规避浏览器 CORS
-  // 生产环境（EdgeOne 部署）不走这条 rewrite，因为生产 CORS 已经允许 edgeone 域名
-  async rewrites() {
-    const apiTarget =
-      process.env.NEXT_PUBLIC_API_URL_PROXY ||
-      "http://82.156.128.150:3001"
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${apiTarget}/api/:path*`,
-      },
-    ]
-  },
+  // /api/* 请求由 app/api/[...slug]/route.ts 代理到后端，无需 rewrite
+  // BACKEND_URL 环境变量控制目标地址，默认 http://82.156.128.150:3001
 }
 
 module.exports = nextConfig
