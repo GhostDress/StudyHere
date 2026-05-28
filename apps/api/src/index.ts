@@ -13,13 +13,19 @@ const app = new Hono()
 
 app.use("*", logger())
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "https://studyhere.pages.edgeone.app",
+  process.env.FRONTEND_URL || "https://studyhere.com.cn",
+  "https://studyhere.com.cn",
   "http://localhost:3000",
   "http://localhost:3001",
 ]
 
 app.use("*", cors({
-  origin: (origin) => (allowedOrigins.includes(origin) ? origin : allowedOrigins[0]),
+  origin: (origin) => {
+    if (!origin) return allowedOrigins[0]
+    // 允许所有 EdgeOne 预览域名（*.edgeone.cool）用于测试
+    if (origin.endsWith(".edgeone.cool")) return origin
+    return allowedOrigins.includes(origin) ? origin : null
+  },
   credentials: true,
 }))
 
