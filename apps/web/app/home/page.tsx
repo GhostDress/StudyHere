@@ -131,11 +131,13 @@ export default function HomePage() {
     }
     setUploading(true)
     try {
-      await vaultApi.upload(file)
-      await refreshList()
+      const res = await vaultApi.upload(file)
+      // v2.2 流程对齐 PRD v2.1 §6.2：
+      // 上传 → /loading/[vaultId] 等待 AI 生成计划
+      // → /plan-confirm/[planId] 用户确认 → /agent-settings/[vaultId] 选风格 → /plan/[id]
+      router.push(`/loading/${res.vaultId}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : "上传失败")
-    } finally {
       setUploading(false)
     }
   }
@@ -340,7 +342,17 @@ export default function HomePage() {
                     </span>
                     {v.status === "done" && (
                       <button
-                        onClick={() => router.push(`/plan/${v.id}`)}
+                        onClick={() => {
+                          // v2.2 流程：若未设置过智能体人格则先去选风格
+                          const stored = JSON.parse(
+                            localStorage.getItem("vault_personalities") || "{}",
+                          )
+                          if (!stored[v.id]) {
+                            router.push(`/agent-settings/${v.id}`)
+                          } else {
+                            router.push(`/plan/${v.id}`)
+                          }
+                        }}
                         className="inline-flex items-center gap-1 text-[13px] font-medium text-[#37352f] hover:text-[#6940a5] transition-colors"
                       >
                         去学习

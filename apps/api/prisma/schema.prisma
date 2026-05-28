@@ -1,5 +1,7 @@
 // StudyHere 数据库 schema
-// 8 张表对应 MVP 核心功能：账号 / OTP / 文件 / 学习计划 / 闪卡 / 题目 / 答题记录 / 错题
+// v2.2 起：MVP 8 张表 + v2.2 新增表（Document / Chunk / ChatMessage / RubricScore /
+//          KgEntity / KgRelation / FlashcardReview / Note）
+// 设计原则：渐进式重构，Vault 主表保留以向后兼容 v0.1 单文件场景
 
 generator client {
   provider = "prisma-client-js"
@@ -51,19 +53,42 @@ enum VaultStatus {
 model Vault {
   id          String      @id @default(uuid())
   userId      String
-  filename    String
-  fileUrl     String
+  filename    String                                   // 主文件名（v0.1 兼容）
+  fileUrl     String                                   // 主文件 URL（v0.1 兼容）
   status      VaultStatus @default(pending)
-  textContent String?     @db.Text
+  textContent String?     @db.Text                     // 主文件解析文本（v0.1 兼容）
   errorMsg    String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plans StudyPlan[]
+  // ---- v2.2 新增字段 ----
+  name             String?            // 宝库名（用户自起，可空，默认用 filename）
+  goal             String?            // 学习目标
+  agentPersonality String   @default("student") // 智能体人格：student / cert / explorer / strict
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plans     StudyPlan[]
+  documents Document[]                              // v2.2：1:N 附加文件
 
   @@index([userId])
   @@map("vaults")
+}
+
+// ---------- 3.1 v2.2 新增：附加文档（多资料宝库） ----------
+model Document {
+  id          String   @id @default(uuid())
+  vaultId     String
+  filename    String
+  fileUrl     String
+  textContent String?  @db.Text
+  pageCount   Int?
+  fileSizeKb  Int?
+  createdAt   DateTime @default(now())
+
+  vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+
+  @@index([vaultId])
+  @@map("documents")
 }
 
 // ---------- 4. 学习计划 ----------

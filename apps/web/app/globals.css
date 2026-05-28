@@ -29,21 +29,26 @@
     letter-spacing: -0.003em;
   }
 
+  /* v2.2.1：更细更轻的滚动条 + 默认透明，仅滚动/hover 时可见 */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #d4d4d2;
+    background: transparent;
     border-radius: 999px;
     border: 2px solid transparent;
     background-clip: padding-box;
+    transition: background 0.2s;
   }
+  /* 只在 hover 整个滚动区域时才显示 thumb */
+  *:hover > ::-webkit-scrollbar-thumb,
+  ::-webkit-scrollbar:hover ::-webkit-scrollbar-thumb,
   ::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a4;
+    background: #c4c4c2;
     background-clip: padding-box;
     border: 2px solid transparent;
   }
@@ -101,4 +106,13 @@
     @apply inline-flex items-center gap-1 px-2 py-0.5 rounded
            text-xs font-medium bg-[#f4efff] text-[#6940a5];
   }
+}
+
+/* v2.2.1: 隐藏滚动条但保留滚动能力（用于 Tab 横向滚动等场景） */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

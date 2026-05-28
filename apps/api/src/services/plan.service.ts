@@ -8,6 +8,7 @@
 // ============================================================
 
 import OpenAI from "openai"
+import { composeSystemPrompt } from "../prompts/personalities"
 
 // ---------- 类型定义（与 fileProcessor.ts 里的结构保持一致）----------
 
@@ -90,11 +91,12 @@ function truncateText(text: string, maxChars = 6000): string {
 export async function generatePlan(
   textContent: string,
   totalDays: number,
+  personality?: string | null,
 ): Promise<StudyPlanResult> {
   const today = new Date().toISOString().slice(0, 10)
   const excerpt = truncateText(textContent, 6000)
 
-  const systemPrompt = `你是一名专业的学习规划师。用户会给你一份学习材料的文字内容，你需要为用户制定一份系统的 ${totalDays} 天学习计划。
+  const taskPrompt = `你是一名专业的学习规划师。用户会给你一份学习材料的文字内容，你需要为用户制定一份系统的 ${totalDays} 天学习计划。
 输出严格为 JSON，格式如下：
 {
   "title": "计划标题（简洁，含材料名称）",
@@ -117,6 +119,7 @@ export async function generatePlan(
 
   const userPrompt = `材料内容如下：\n\n${excerpt}`
 
+  const systemPrompt = composeSystemPrompt(personality, taskPrompt)
   const result = await callAIJSON<StudyPlanResult>(systemPrompt, userPrompt)
 
   // 安全校验
@@ -142,8 +145,9 @@ export async function generatePlan(
 export async function generateFlashcards(
   dayContent: string,
   count: number,
+  personality?: string | null,
 ): Promise<FlashcardResult[]> {
-  const systemPrompt = `你是一名教育专家，擅长制作学习闪卡。根据给定的学习内容，生成 ${count} 张高质量的记忆闪卡。
+  const taskPrompt = `你是一名教育专家，擅长制作学习闪卡。根据给定的学习内容，生成 ${count} 张高质量的记忆闪卡。
 输出严格为 JSON，格式如下：
 {
   "flashcards": [
@@ -158,6 +162,7 @@ export async function generateFlashcards(
 
   const userPrompt = `今日学习内容：${dayContent}`
 
+  const systemPrompt = composeSystemPrompt(personality, taskPrompt)
   const result = await callAIJSON<{ flashcards: FlashcardResult[] }>(systemPrompt, userPrompt)
 
   if (!Array.isArray(result.flashcards)) {
@@ -178,8 +183,9 @@ export async function generateFlashcards(
 export async function generateQuestions(
   dayContent: string,
   count: number,
+  personality?: string | null,
 ): Promise<QuestionResult[]> {
-  const systemPrompt = `你是一名出题专家，擅长设计单项选择题。根据给定的学习内容，生成 ${count} 道高质量选择题。
+  const taskPrompt = `你是一名出题专家，擅长设计单项选择题。根据给定的学习内容，生成 ${count} 道高质量选择题。
 输出严格为 JSON，格式如下：
 {
   "questions": [
@@ -200,6 +206,7 @@ export async function generateQuestions(
 
   const userPrompt = `今日学习内容：${dayContent}`
 
+  const systemPrompt = composeSystemPrompt(personality, taskPrompt)
   const result = await callAIJSON<{ questions: QuestionResult[] }>(systemPrompt, userPrompt)
 
   if (!Array.isArray(result.questions)) {
