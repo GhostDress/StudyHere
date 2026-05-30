@@ -244,23 +244,31 @@ export default function HomePage() {
           <div className="mt-12">
             <div className="flex items-baseline justify-between mb-4">
               <h2 className="text-[15px] font-semibold text-[#37352f]">
-                没有自己的资料？试试这些精选
+                课程示范（仅作参考）
               </h2>
-              <span className="text-[12px] text-[#9b9a97]">5 份示范资料</span>
+              <span className="text-[12px] text-[#9b9a97]">
+                上传你自己的资料体验全功能
+              </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {SAMPLE_MATERIALS.map((m, i) => (
                 <div
                   key={i}
-                  className="nt-card p-4 hover:border-[#6940a5] hover:shadow-[0_2px_8px_rgba(105,64,165,0.06)] transition-all duration-200 cursor-pointer"
+                  className="nt-card p-4 opacity-70 cursor-default"
+                  title="示范条目，仅作风格预览"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-md bg-[#f4efff] flex items-center justify-center flex-shrink-0">
                       <BookOpen className="w-4 h-4 text-[#6940a5]" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-[14px] font-semibold text-[#37352f] truncate">
-                        {m.title}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[14px] font-semibold text-[#37352f] truncate">
+                          {m.title}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#f1f1ef] text-[#9b9a97] font-medium flex-shrink-0">
+                          示范
+                        </span>
                       </div>
                       <div className="text-[12px] text-[#9b9a97] mt-1 flex items-center gap-2">
                         <span>{m.topic}</span>
@@ -286,15 +294,9 @@ export default function HomePage() {
 
         <div className="mt-3 nt-card divide-y divide-[#e9e9e8]">
           {vaults.length === 0 ? (
-            <div className="px-6 py-16 flex flex-col items-center text-center">
-              <div className="w-12 h-12 rounded-lg bg-[#f1f1ef] flex items-center justify-center">
-                <FileText className="w-5 h-5 text-[#9b9a97]" />
-              </div>
-              <p className="mt-4 text-[14px] text-[#787774]">
-                还没有上传过资料
-              </p>
-              <p className="mt-1 text-[13px] text-[#9b9a97]">
-                拖一份你正在学的 PDF 进来试试
+            <div className="px-6 py-8 text-center">
+              <p className="text-[13px] text-[#9b9a97]">
+                暂无历史资料 · 上传后会显示在这里
               </p>
             </div>
           ) : (

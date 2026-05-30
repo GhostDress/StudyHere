@@ -166,6 +166,27 @@ if (typeof window !== "undefined") {
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config
   })
+
+  // 401 自动清 token 并跳登录
+  //
+  // 为什么：mock 模式切到真后端时，旧的 mock-token-* 会被后端拒绝（401）。
+  // 没有这个拦截器，用户必须自己开 DevTools 清 localStorage——体验灾难。
+  // 加上后任何 401 自动清 token + 跳 /login，等于"会话过期"标准处理。
+  http.interceptors.response.use(
+    (res) => res,
+    (err) => {
+      if (err?.response?.status === 401 && typeof window !== "undefined") {
+        // 防止 /login 页里 send-otp 之类的接口也触发跳转
+        const onLoginPage = window.location.pathname.startsWith("/login")
+        if (!onLoginPage) {
+          localStorage.removeItem("token")
+          // 加 ?expired=1 让 login 页可以提示"会话已过期"
+          window.location.href = "/login?expired=1"
+        }
+      }
+      return Promise.reject(err)
+    },
+  )
 }
 
 // ---------- 仅 mock 模式使用的本地状态 ----------

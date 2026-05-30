@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
 import { authApi } from "@/lib/api"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
   const [otpSent, setOtpSent] = useState(false)
@@ -14,9 +15,11 @@ export default function LoginPage() {
   const [sending, setSending] = useState(false)
   const [logging, setLogging] = useState(false)
   const [error, setError] = useState("")
+  const expired = searchParams?.get("expired") === "1"
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    // 会话过期跳转回来时 token 已经被 axios 拦截器清掉
     if (localStorage.getItem("token")) {
       router.replace("/home")
     }
@@ -96,6 +99,12 @@ export default function LoginPage() {
           <p className="mt-2 text-[14px] text-[#787774] text-center">
             邮箱即可登录，首次自动创建账户
           </p>
+
+          {expired && (
+            <div className="mt-6 px-4 py-2.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[13px] text-center">
+              登录已过期，请重新登录
+            </div>
+          )}
 
           <div className="mt-10 space-y-4">
             <div>
