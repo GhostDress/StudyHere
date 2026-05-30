@@ -48,12 +48,12 @@ auth.post("/send-otp", async (c) => {
     data: { email, code, expiresAt },
   })
 
-  try {
-    await sendOtpEmail(email, code)
-  } catch (e) {
+  // 邮件异步发送（fire-and-forget），不阻塞响应。
+  // 发邮件耗时 2-3s，若 await 会导致 EdgeOne 边缘层代理超时返回 500。
+  // OTP 已写库，立即返回 200；发送失败只记日志，用户可重试。
+  sendOtpEmail(email, code).catch((e) => {
     console.error("OTP 邮件发送失败:", e)
-    return c.json({ error: "验证码发送失败，请稍后重试" }, 500)
-  }
+  })
 
   return c.json({ success: true })
 })
