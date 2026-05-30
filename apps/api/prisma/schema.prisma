@@ -53,22 +53,24 @@ enum VaultStatus {
 model Vault {
   id          String      @id @default(uuid())
   userId      String
-  filename    String                                   // 主文件名（v0.1 兼容）
-  fileUrl     String                                   // 主文件 URL（v0.1 兼容）
+  filename    String // 主文件名（v0.1 兼容）
+  fileUrl     String // 主文件 URL（v0.1 兼容）
   status      VaultStatus @default(pending)
-  textContent String?     @db.Text                     // 主文件解析文本（v0.1 兼容）
+  textContent String?     @db.Text // 主文件解析文本（v0.1 兼容）
   errorMsg    String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   // ---- v2.2 新增字段 ----
-  name             String?            // 宝库名（用户自起，可空，默认用 filename）
-  goal             String?            // 学习目标
-  agentPersonality String   @default("student") // 智能体人格：student / cert / explorer / strict
+  name             String? // 宝库名（用户自起，可空，默认用 filename）
+  goal             String? // 学习目标
+  agentPersonality String  @default("student") // 智能体人格：student / cert / explorer / strict
 
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plans     StudyPlan[]
-  documents Document[]                              // v2.2：1:N 附加文件
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plans       StudyPlan[]
+  documents   Document[] // v2.2：1:N 附加文件
+  kgEntities  KgEntity[] // v2.2 Day 6：知识图谱节点
+  kgRelations KgRelation[] // v2.2 Day 6：知识图谱边
 
   @@index([userId])
   @@map("vaults")
@@ -176,4 +178,51 @@ model WrongQuestion {
   @@unique([userId, questionId])
   @@index([userId])
   @@map("wrong_questions")
+}
+
+// ---------- 9. v2.2 Day 6：知识图谱节点 ----------
+// 对应 migration: prisma/migrations/v2.2/002_day6_kg_entities_and_relations.sql
+model KgEntity {
+  id             String    @id @default(uuid())
+  vaultId        String
+  name           String // 实体名（如 "MVP"）
+  type           String    @default("concept") // concept / method / person / tool / theory / other
+  description    String?   @db.Text // hover 浮层短解释
+  masteryScore   Int       @default(0) @db.SmallInt // 0-100，前端颜色映射
+  testCount      Int       @default(0) // 被考次数，可视化节点大小
+  sourcePages    Int[]     @default([]) // 出现的原文页码
+  sourceChunkIds String[]  @default([]) // 关联 chunks.id（v2.2 RAG 串联，等 chunks 表上线后回填）
+  feedbackCount  Int       @default(0) // v2.3 阶段 B：用户报错累计
+  lastFeedbackAt DateTime? // v2.3 阶段 B：最后报错时间
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  vault         Vault        @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  relationsFrom KgRelation[] @relation("KgRelationSource")
+  relationsTo   KgRelation[] @relation("KgRelationTarget")
+
+  @@unique([vaultId, name])
+  @@index([vaultId])
+  @@index([vaultId, masteryScore])
+  @@map("kg_entities")
+}
+
+// ---------- 10. v2.2 Day 6：知识图谱边 ----------
+model KgRelation {
+  id          String   @id @default(uuid())
+  vaultId     String // 冗余存，便于跨表查询不 join
+  sourceId    String
+  targetId    String
+  type        String   @default("related_to") // prerequisite / contains / applies_to / similar_to / related_to
+  weight      Float    @default(1.0) // 0.0-1.0 置信度
+  description String?
+  createdAt   DateTime @default(now())
+
+  vault  Vault    @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  source KgEntity @relation("KgRelationSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  target KgEntity @relation("KgRelationTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId, type])
+  @@index([vaultId])
+  @@map("kg_relations")
 }
