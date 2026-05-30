@@ -1,33 +1,23 @@
 "use client"
 
 /**
- * PDF 渲染分两层：
- *   - PdfViewer (本文件)：上层壳，识别 mock URL 走演示态；只有真实 URL 才动态加载 react-pdf
- *   - RealPdfViewer (动态 import)：真正用 react-pdf 渲染，pdfjs-dist 只在此文件被加载
+ * PDF 渲染层。
  *
- * 为什么分层：
- *   pdfjs-dist 5.x 在 next.js webpack 主线程被 import 时会触发
- *   "TypeError: Object.defineProperty called on non-object"（pdfjs 用了只在 worker
- *   context 才有的 global 拓展）。把 react-pdf import 推到二级 dynamic import 后，
- *   它只在用户真要看真实 PDF 时才加载，mock 模式完全不碰 pdfjs。
+ * v2.3 slice 2 阶段：暂用浏览器原生 iframe + PDF 插件渲染。
+ *   为什么不用 react-pdf：
+ *     - pdfjs-dist 5.x 在 Next.js 14 webpack 主线程被 import 时会炸
+ *       「TypeError: Object.defineProperty called on non-object」
+ *     - 之前用 dynamic import + ssr:false 包了一层，但开发模式下偶发回归
+ *     - 当前阶段功能优先级是「能看原文核对」，PDF 高级交互（高亮、标注）
+ *       要等 v2.4 上 react-pdf 真稳了再切回去
+ *
+ * mock URL / 已失效 URL 走演示态占位，不加载 iframe。
  */
 
 import { useEffect, useState } from "react"
-import dynamic from "next/dynamic"
-import { FileText, Loader2 } from "lucide-react"
+import { FileText, ExternalLink } from "lucide-react"
 
 const MOCK_PAGE_COUNT = 30
-
-// react-pdf 只在真实 URL 渲染时动态加载，避开 SSR + webpack 主线程加载 pdfjs 报错
-const RealPdfViewer = dynamic(() => import("./RealPdfViewer"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center py-12 text-[#9b9a97]">
-      <Loader2 className="size-5 animate-spin mr-2" />
-      <span className="text-sm">加载 PDF 渲染器…</span>
-    </div>
-  ),
-})
 
 interface PdfViewerProps {
   fileUrl: string
@@ -36,10 +26,24 @@ interface PdfViewerProps {
   onLoadSuccess: (numPages: number) => void
 }
 
+// 判断是否走演示态（不加载 iframe）：
+//   - 空 URL
+//   - mock:// 开头（mock 上传产生的）
+//   - file:// 本地路径（CORS 也会炸）
+//   - rcpwlkdofuymxyrkrcms.supabase.co 那个 Supabase 项目已经无效，
+//     mockData.ts 里 vlt-001/002/003 的 fileUrl 指向它，加载会 404/CORS
+function isUnloadableUrl(url: string): boolean {
+  if (!url) return true
+  if (url.startsWith("mock://")) return true
+  if (url.startsWith("file://")) return true
+  if (url.includes("rcpwlkdofuymxyrkrcms.supabase.co")) return true
+  return false
+}
+
 export default function PdfViewer({ fileUrl, page, scale, onLoadSuccess }: PdfViewerProps) {
   const [containerWidth, setContainerWidth] = useState<number>(800)
 
-  const isMockUrl = !fileUrl || fileUrl.startsWith("mock://")
+  const isMockUrl = isUnloadableUrl(fileUrl)
 
   useEffect(() => {
     const update = () => {
@@ -69,8 +73,8 @@ export default function PdfViewer({ fileUrl, page, scale, onLoadSuccess }: PdfVi
             <FileText className="size-12 text-[#c4c4c2] mb-4" />
             <div className="text-2xl font-bold text-[#37352f] mb-2">第 {page} 页</div>
             <div className="text-[13px] text-[#9b9a97] mb-6 max-w-xs">
-              这是 mock 演示页面 — 后端接入 Supabase Storage 真实 PDF 后，
-              这里会渲染实际原文内容。
+              这是 mock 演示页面 — 当前 vault 的 fileUrl 失效或处于 mock 状态。
+              真上传的 PDF 在这里会渲染实际原文。
             </div>
             <div className="rounded-lg bg-[#f4efff] text-[#6940a5] px-3 py-2 text-[12px] font-medium">
               💡 你现在可以测试：翻页 / 跳页 / 缩放 / 关闭
@@ -84,20 +88,35 @@ export default function PdfViewer({ fileUrl, page, scale, onLoadSuccess }: PdfVi
             </div>
           </div>
           <div className="border-t border-[#e9e9e8] py-2 text-center text-[11px] text-[#c4c4c2]">
-            {page} / {MOCK_PAGE_COUNT}  ·  mock://demo
+            {page} / {MOCK_PAGE_COUNT}  ·  {!fileUrl ? "no-url" : "mock"}
           </div>
         </div>
       </div>
     )
   }
 
+  // 真 URL：iframe 直接显示 PDF（浏览器原生 PDF 插件）
+  // iframe 加载完成时无法知道总页数（浏览器没暴露 API），
+  // 给抽屉一个保守的"100 页"假设让翻页 UI 能用
+  // 实际渲染由浏览器自己控制，#page=N 锚点让它跳到那页
   return (
-    <RealPdfViewer
-      fileUrl={fileUrl}
-      page={page}
-      scale={scale}
-      containerWidth={containerWidth}
-      onLoadSuccess={onLoadSuccess}
-    />
+    <div className="w-full h-full bg-[#f4f4f3] relative">
+      <iframe
+        key={`${fileUrl}#${page}`}
+        src={`${fileUrl}#page=${page}&zoom=${Math.round(scale * 100)}`}
+        className="w-full h-full border-0"
+        title="PDF 原文"
+        onLoad={() => onLoadSuccess(100)}
+      />
+      <a
+        href={fileUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-md bg-white/90 border border-[#e9e9e8] px-2 py-1 text-[11px] text-[#6940a5] hover:bg-white"
+      >
+        <ExternalLink className="size-3" />
+        新窗口打开
+      </a>
+    </div>
   )
 }
