@@ -394,29 +394,65 @@ export const planApi = {
       // 然后给非钉住的 Day 换 topic/goal 模拟"AI 重生"
       const original = await planApi.get(planId)
       const oldDays = original.plan.planData?.days ?? []
-      const v = mockVaultStore.find(
-        (x) => x.id === original.plan.vaultId,
+      console.log(
+        "[mock regenerate] planId=",
+        planId,
+        "oldDays.length=",
+        oldDays.length,
+        "pinnedDays=",
+        opts.pinnedDays,
       )
-      const subject = detectSubject(v?.filename ?? "")
 
-      const regeneratedDays = oldDays.map((d) => {
+      // 防御：找不到原 plan 或没有 days 时也要构造一份能用的（按 totalDays 兜底）
+      const totalDays = original.plan.totalDays || 14
+      const baseDays =
+        oldDays.length > 0
+          ? oldDays
+          : Array.from({ length: totalDays }, (_, i) => ({
+              day: i + 1,
+              date: new Date(Date.now() + i * 86400000)
+                .toISOString()
+                .slice(0, 10),
+              topics: [`第${i + 1}章主题`],
+              goals: [`完成第${i + 1}章内容学习与练习`],
+              estimatedMinutes: 60,
+            }))
+
+      const v = mockVaultStore.find((x) => x.id === original.plan.vaultId)
+      const subject = detectSubject(v?.filename ?? "")
+      // 用一个明显能看出差异的版本号后缀，每次重生递增
+      const v2suffix = ` · 重生 ${new Date().toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })}`
+
+      const regeneratedDays = baseDays.map((d) => {
         if (opts.pinnedDays.includes(d.day)) {
           return d // 钉住的不动
         }
-        // 非钉住的换内容（mock 重生）—— 加 "·v2" 标记让用户看到差异
+        // 非钉住的换内容（mock 重生）—— 加重生时间戳让用户能看到差异
         return {
           ...d,
-          topics: [`${getTopicForDay(subject, d.day)} ·v2`],
-          goals: [`${getGoalForDay(subject, d.day)} ·v2`],
+          topics: [`${getTopicForDay(subject, d.day)}${v2suffix}`],
+          goals: [`${getGoalForDay(subject, d.day)}`],
+          estimatedMinutes: d.estimatedMinutes ?? 60,
         }
       })
+
+      console.log(
+        "[mock regenerate] returning",
+        regeneratedDays.length,
+        "days, sample:",
+        regeneratedDays[0],
+      )
 
       return {
         plan: {
           ...original.plan,
           planData: {
             title: original.plan.title,
-            totalDays: original.plan.totalDays,
+            totalDays,
             days: regeneratedDays,
           },
         },

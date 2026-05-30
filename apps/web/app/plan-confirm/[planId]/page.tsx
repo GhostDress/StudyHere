@@ -141,16 +141,10 @@ export default function PlanConfirmPage() {
   }
 
   async function handleRegenerate() {
+    // 注：之前用 confirm() 二次确认，但 Chrome 在频繁触发时会"禁用此网站对话框"
+    // 导致按钮死掉。改成直接重生 + 顶部提示条「已重生 N 天」让用户知道发生了什么。
+    // 钉住功能本身就是"不想重生这天就先钉住"的语义，所以无需二次确认。
     if (!plan || regenerating) return
-    const totalDays = orderedDays.length
-    const pinnedCount = pinnedDays.length
-    const willRegen = totalDays - pinnedCount
-
-    const confirmMsg =
-      pinnedCount > 0
-        ? `保留 ${pinnedCount} 天钉住的内容，重新拆解其余 ${willRegen} 天？`
-        : `重新拆解全部 ${totalDays} 天的学习内容？\n（如想保留某些天不变，请先 📌 钉住它们）`
-    if (!confirm(confirmMsg)) return
 
     setRegenerating(true)
     setRegenError(null)
