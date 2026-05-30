@@ -10,7 +10,7 @@ import {
   Eye,
 } from "lucide-react"
 import { flashcardApi, planApi } from "@/lib/api"
-import type { Flashcard, StudyPlan, AgentPersonality } from "@/lib/types"
+import type { Flashcard, StudyPlan, AgentPersonality, PlanData } from "@/lib/types"
 import PersonalitySwitcher from "@/components/PersonalitySwitcher"
 import { getActivePersonality, getSandbox } from "@/lib/sandboxStore"
 
@@ -27,19 +27,6 @@ import { getActivePersonality, getSandbox } from "@/lib/sandboxStore"
  *     · 只练未掌握的（mastery < 5）
  *     · 点击单张闪卡 → 进入只含这一张的闪卡练习
  */
-interface PlanDay {
-  day: number
-  date: string
-  topics: string[]
-  goals: string[]
-  estimatedMinutes: number
-}
-
-interface PlanData {
-  title: string
-  totalDays: number
-  days: PlanDay[]
-}
 
 type FlashcardStatus = "untouched" | "not-known" | "blurry" | "mastered"
 

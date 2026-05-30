@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import "./globals.css"
+import { PdfDrawerProvider } from "@/components/PdfDrawer"
 
 export const metadata: Metadata = {
   title: "StudyHere - AI 学习闭环平台",
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        <PdfDrawerProvider>{children}</PdfDrawerProvider>
+      </body>
     </html>
   )
 }

@@ -17,8 +17,9 @@ import {
   FileQuestion,
 } from "lucide-react"
 import { planApi } from "@/lib/api"
-import type { StudyPlan, AgentPersonality } from "@/lib/types"
+import type { StudyPlan, AgentPersonality, PlanData, PlanDay } from "@/lib/types"
 import PersonalitySwitcher from "@/components/PersonalitySwitcher"
+import ChatTab from "@/components/ChatTab"
 import {
   getActivePersonality,
   getSandbox,
@@ -27,22 +28,9 @@ import {
   FEEDBACK_TAG_LABELS,
 } from "@/lib/sandboxStore"
 
-interface PlanDay {
-  day: number
-  date: string
-  topics: string[]
-  goals: string[]
-  estimatedMinutes: number
-}
-
-interface PlanData {
-  title: string
-  totalDays: number
-  days: PlanDay[]
-}
-
 // PRD v2.1 §6.2 要求的 Tab 结构：学·练·考·纠·进度
-type TabKey = "study" | "practice" | "exam" | "wrong" | "progress"
+// v2.3：加「问 AI」(RAG 对话)
+type TabKey = "study" | "practice" | "exam" | "wrong" | "progress" | "ask"
 
 const TABS: Array<{
   key: TabKey
@@ -55,6 +43,7 @@ const TABS: Array<{
   { key: "exam", label: "考", Icon: ClipboardCheck, desc: "阶段测验" },
   { key: "wrong", label: "纠", Icon: AlertCircle, desc: "错题本" },
   { key: "progress", label: "进度", Icon: BarChart3, desc: "学习追踪" },
+  { key: "ask", label: "问 AI", Icon: Sparkles, desc: "基于资料的问答" },
 ]
 
 export default function PlanDetailPage() {
@@ -235,6 +224,7 @@ export default function PlanDetailPage() {
           <WrongTab planId={plan.id} vaultId={plan.vaultId} />
         )}
         {tab === "progress" && <ProgressTab vaultId={plan.vaultId} />}
+        {tab === "ask" && <ChatTab vaultId={plan.vaultId} />}
       </div>
     </main>
   )
