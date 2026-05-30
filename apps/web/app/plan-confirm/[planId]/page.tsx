@@ -160,18 +160,31 @@ export default function PlanConfirmPage() {
         pinnedDays,
         dayOrder: orderedDays.map((d) => d.day),
       })
-      // 如果后端返回了新 plan（同 id 或新 id），用新数据刷新本地
       const newPlan = res.plan
-      setPlan(newPlan)
       const newDays = newPlan.planData?.days ?? []
-      // 重生后保留钉住的 Day（钉住 Day 用旧数据，其他用新返回的）
+
+      // 防御：如果后端/mock 没返回 days，不清空 UI，提示用户重试
+      if (newDays.length === 0) {
+        setRegenError(
+          "后端暂未返回新计划（接口可能还未部署），当前内容保持不变",
+        )
+        return
+      }
+
+      setPlan(newPlan)
+      // 重生后保留钉住的 Day 的旧数据，其他 Day 用新返回的
       const merged = newDays.map((nd) =>
         pinnedDays.includes(nd.day)
           ? orderedDays.find((od) => od.day === nd.day) ?? nd
           : nd,
       )
       setOrderedDays(merged)
-      setRegenNotice("计划已重新生成，钉住的内容保持不变")
+      const changedCount = newDays.length - pinnedDays.length
+      setRegenNotice(
+        pinnedDays.length > 0
+          ? `已重新生成 ${changedCount} 天（钉住的 ${pinnedDays.length} 天保持不变）`
+          : `已重新生成 ${newDays.length} 天的内容`,
+      )
     } catch (e) {
       setRegenError(e instanceof Error ? e.message : "重新生成失败，请稍后再试")
     } finally {

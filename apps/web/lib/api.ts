@@ -390,10 +390,37 @@ export const planApi = {
   ): Promise<PlanDetailResponse> {
     if (USE_MOCK) {
       await delay(800)
-      // mock 模式：找到原 plan 返回（实际不重生，仅模拟"完成"）
-      const p = mockPlans.find((x) => x.id === planId)
-      if (p) return { plan: p }
-      return { plan: mockPlanDetail }
+      // mock 模式：复用 planApi.get 拿到完整 plan（带 planData.days）
+      // 然后给非钉住的 Day 换 topic/goal 模拟"AI 重生"
+      const original = await planApi.get(planId)
+      const oldDays = original.plan.planData?.days ?? []
+      const v = mockVaultStore.find(
+        (x) => x.id === original.plan.vaultId,
+      )
+      const subject = detectSubject(v?.filename ?? "")
+
+      const regeneratedDays = oldDays.map((d) => {
+        if (opts.pinnedDays.includes(d.day)) {
+          return d // 钉住的不动
+        }
+        // 非钉住的换内容（mock 重生）—— 加 "·v2" 标记让用户看到差异
+        return {
+          ...d,
+          topics: [`${getTopicForDay(subject, d.day)} ·v2`],
+          goals: [`${getGoalForDay(subject, d.day)} ·v2`],
+        }
+      })
+
+      return {
+        plan: {
+          ...original.plan,
+          planData: {
+            title: original.plan.title,
+            totalDays: original.plan.totalDays,
+            days: regeneratedDays,
+          },
+        },
+      }
     }
     try {
       const res = await http.post<PlanDetailResponse>(
