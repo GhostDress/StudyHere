@@ -16,7 +16,8 @@ export async function parseFile(filePath: string, mimeType: string): Promise<str
     // pdf-parse 需要 Buffer
     const buffer = await readFile(filePath)
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pdfParse = require("pdf-parse")
+    const pdfParseModule = require("pdf-parse")
+    const pdfParse = pdfParseModule.default ?? pdfParseModule
     const data = await pdfParse(buffer)
     return cleanText(data.text)
   }
