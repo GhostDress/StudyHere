@@ -69,6 +69,7 @@ model Vault {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   plans       StudyPlan[]
   documents   Document[] // v2.2：1:N 附加文件
+  chunks      Chunk[] // v2.2 Day 3：文档分片（RAG + 溯源基础设施）
   kgEntities  KgEntity[] // v2.2 Day 6：知识图谱节点
   kgRelations KgRelation[] // v2.2 Day 6：知识图谱边
 
@@ -87,7 +88,8 @@ model Document {
   fileSizeKb  Int?
   createdAt   DateTime @default(now())
 
-  vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  vault  Vault   @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  chunks Chunk[] // v2.2 Day 3：本文档切出的 chunks
 
   @@index([vaultId])
   @@map("documents")
@@ -225,4 +227,30 @@ model KgRelation {
   @@unique([sourceId, targetId, type])
   @@index([vaultId])
   @@map("kg_relations")
+}
+
+// ---------- 11. v2.2 Day 3：文档分片（RAG + 溯源基础设施）----------
+// 对应 migration: prisma/migrations/v2.2/003_day3_chunks_with_vector.sql
+// 前置：pgvector extension 必须先开（A-003）
+// 注：embedding 列是 vector(1024)，Prisma 不原生支持，标记 Unsupported；
+//     向量相似度检索走 $queryRaw 原生 SQL（标准做法，参见 chunk.service.ts）
+model Chunk {
+  id         String                       @id @default(uuid())
+  vaultId    String
+  documentId String? // NULL = 主文件（Vault.fileUrl）；非 NULL = Document
+  text       String                       @db.Text
+  pageStart  Int // 起始页（PDF 抽屉跳转目标）
+  pageEnd    Int // 结束页（跨页 chunk 时 > pageStart）
+  orderIndex Int // vault 内全局顺序，保持原文流
+  charCount  Int // chunk 字符数，调试 chunking 质量
+  embedding  Unsupported("vector(1024)")? // 智谱 embedding-3；NULL = 待算
+  embeddedAt DateTime? // 向量算完时间
+  createdAt  DateTime                     @default(now())
+
+  vault    Vault     @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([vaultId])
+  @@index([vaultId, orderIndex])
+  @@map("chunks")
 }
