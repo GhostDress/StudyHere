@@ -347,6 +347,49 @@ export const planApi = {
     const res = await http.get<PlanStatusResponse>(`/api/plan/${id}/status`)
     return res.data
   },
+
+  /**
+   * v2.3 slice 2：重新生成计划（带钉住 + 自定义顺序）。
+   *
+   * 钉住的 Day 不会被 AI 重生，其他 Day 重新拆解。
+   * dayOrder 是用户拖拽后的顺序（按 day number 数组），后端应保持这个顺序。
+   *
+   * 后端接口（暂未实现，D 后续做）：
+   *   POST /api/plan/:planId/regenerate
+   *   body: { pinnedDays: number[], dayOrder: number[] }
+   *   resp: { plan: StudyPlan }   // 新 plan，对应新 planId
+   *
+   * 前端在 mock 模式 / 接口未上线时走 fallback：
+   *   假装重生 800ms，返回原 plan，让 UI 提示"完成"，
+   *   实际让用户继续看原 plan（这是 graceful degradation）。
+   */
+  async regenerate(
+    planId: string,
+    opts: { pinnedDays: number[]; dayOrder: number[] },
+  ): Promise<PlanDetailResponse> {
+    if (USE_MOCK) {
+      await delay(800)
+      // mock 模式：找到原 plan 返回（实际不重生，仅模拟"完成"）
+      const p = mockPlans.find((x) => x.id === planId)
+      if (p) return { plan: p }
+      return { plan: mockPlanDetail }
+    }
+    try {
+      const res = await http.post<PlanDetailResponse>(
+        `/api/plan/${planId}/regenerate`,
+        opts,
+      )
+      return res.data
+    } catch (e: unknown) {
+      // 后端接口还没上线：404 fallback 到"重生未实现"提示，仍返回原 plan 让 UI 不崩
+      const status = (e as { response?: { status?: number } })?.response?.status
+      if (status === 404) {
+        const cached = await planApi.get(planId)
+        return cached
+      }
+      throw e
+    }
+  },
 }
 
 // ============================================================
