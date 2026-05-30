@@ -13,13 +13,20 @@ export async function parseFile(filePath: string, mimeType: string): Promise<str
 
   // ---- PDF ----
   if (mimeType === "application/pdf" || ext === ".pdf") {
-    // pdf-parse 需要 Buffer
     const buffer = await readFile(filePath)
+    // pdf-parse v2 改成了 class API：导出 { PDFParse }，不再是可直接调用的函数。
+    // 旧写法 require("pdf-parse")(buffer) 会报 "pdfParse is not a function"。
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pdfParseModule = require("pdf-parse")
-    const pdfParse = pdfParseModule.default ?? pdfParseModule
-    const data = await pdfParse(buffer)
-    return cleanText(data.text)
+    const { PDFParse } = require("pdf-parse")
+    // 构造器接受 Buffer（内部会自动转 Uint8Array）
+    const parser = new PDFParse({ data: buffer })
+    try {
+      const result = await parser.getText()
+      return cleanText(result.text)
+    } finally {
+      // 释放底层 pdfjs 文档，避免内存/句柄泄漏
+      await parser.destroy().catch(() => {})
+    }
   }
 
   // ---- Word (.docx) ----
