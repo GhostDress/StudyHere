@@ -14,6 +14,7 @@ import {
   ChevronUp,
   GripVertical,
   Sparkles,
+  RefreshCw,
 } from "lucide-react"
 import {
   DragDropContext,
@@ -64,6 +65,9 @@ export default function PlanConfirmPage() {
   const [pinnedDays, setPinnedDays] = useState<number[]>([])
   const [expandedReasonings, setExpandedReasonings] = useState<Set<number>>(new Set())
   const [orderedDays, setOrderedDays] = useState<PlanDay[]>([])
+  const [regenerating, setRegenerating] = useState(false)
+  const [regenError, setRegenError] = useState<string | null>(null)
+  const [regenNotice, setRegenNotice] = useState<string | null>(null)
 
   // 加载 plan + vault（vault 为了拿 fileUrl 给 PdfDrawer 用）
   useEffect(() => {
@@ -134,6 +138,52 @@ export default function PlanConfirmPage() {
     if (!vault?.fileUrl) return
     const pages = d.sourcePages ?? mockSourcePages(d.day, plan?.totalDays ?? 7)
     openPdf({ fileUrl: vault.fileUrl, page: pages[0] ?? 1 })
+  }
+
+  async function handleRegenerate() {
+    // 注：之前用 confirm() 二次确认，但 Chrome 在频繁触发时会"禁用此网站对话框"
+    // 导致按钮死掉。改成直接重生 + 顶部提示条「已重生 N 天」让用户知道发生了什么。
+    // 钉住功能本身就是"不想重生这天就先钉住"的语义，所以无需二次确认。
+    if (!plan || regenerating) return
+
+    setRegenerating(true)
+    setRegenError(null)
+    setRegenNotice(null)
+    try {
+      const res = await planApi.regenerate(plan.id, {
+        pinnedDays,
+        dayOrder: orderedDays.map((d) => d.day),
+      })
+      const newPlan = res.plan
+      const newDays = newPlan.planData?.days ?? []
+
+      // 防御：如果后端/mock 没返回 days，不清空 UI，提示用户重试
+      if (newDays.length === 0) {
+        setRegenError(
+          "后端暂未返回新计划（接口可能还未部署），当前内容保持不变",
+        )
+        return
+      }
+
+      setPlan(newPlan)
+      // 重生后保留钉住的 Day 的旧数据，其他 Day 用新返回的
+      const merged = newDays.map((nd) =>
+        pinnedDays.includes(nd.day)
+          ? orderedDays.find((od) => od.day === nd.day) ?? nd
+          : nd,
+      )
+      setOrderedDays(merged)
+      const changedCount = newDays.length - pinnedDays.length
+      setRegenNotice(
+        pinnedDays.length > 0
+          ? `已重新生成 ${changedCount} 天（钉住的 ${pinnedDays.length} 天保持不变）`
+          : `已重新生成 ${newDays.length} 天的内容`,
+      )
+    } catch (e) {
+      setRegenError(e instanceof Error ? e.message : "重新生成失败，请稍后再试")
+    } finally {
+      setRegenerating(false)
+    }
   }
 
   function handleDragEnd(result: DropResult) {
@@ -295,16 +345,46 @@ export default function PlanConfirmPage() {
 
       {/* 底部固定操作栏 */}
       <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-[#e9e9e8]">
+        {/* 提示条（重生成功/失败） */}
+        {(regenNotice || regenError) && (
+          <div
+            className={`mx-auto max-w-5xl px-6 py-2 text-[12px] ${
+              regenError
+                ? "text-[#c4332e] bg-[#fdf3f3]"
+                : "text-[#2d7a45] bg-[#eaf5ec]"
+            }`}
+          >
+            {regenError ?? regenNotice}
+          </div>
+        )}
         <div className="mx-auto max-w-5xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[13px] text-[#9b9a97] text-center sm:text-left">
             {pinnedDays.length > 0
-              ? `已钉住 ${pinnedDays.length} 天，重生计划时会保留`
+              ? `已钉住 ${pinnedDays.length} 天，重新生成时会保留这几天`
               : "点「确认并继续」后，下一步选择 AI 助教风格"}
           </p>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#e9e9e8] hover:border-[#6940a5] hover:text-[#6940a5] px-4 py-2.5 text-[13px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-none justify-center"
+              title={
+                pinnedDays.length > 0
+                  ? `保留 ${pinnedDays.length} 天钉住的内容，其余重新拆`
+                  : "完全重新拆解所有天（如想保留某些天，请先钉住）"
+              }
+            >
+              {regenerating ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="size-3.5" />
+              )}
+              {regenerating ? "重新生成中" : "重新生成"}
+            </button>
+            <button
               onClick={handleAccept}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#37352f] text-white px-5 py-2.5 text-[14px] font-semibold hover:bg-black flex-1 sm:flex-none justify-center"
+              disabled={regenerating}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#37352f] text-white px-5 py-2.5 text-[14px] font-semibold hover:bg-black flex-1 sm:flex-none justify-center disabled:opacity-50"
             >
               确认并继续
               <ArrowRight className="size-4" />

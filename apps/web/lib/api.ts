@@ -166,6 +166,27 @@ if (typeof window !== "undefined") {
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config
   })
+
+  // 401 自动清 token 并跳登录
+  //
+  // 为什么：mock 模式切到真后端时，旧的 mock-token-* 会被后端拒绝（401）。
+  // 没有这个拦截器，用户必须自己开 DevTools 清 localStorage——体验灾难。
+  // 加上后任何 401 自动清 token + 跳 /login，等于"会话过期"标准处理。
+  http.interceptors.response.use(
+    (res) => res,
+    (err) => {
+      if (err?.response?.status === 401 && typeof window !== "undefined") {
+        // 防止 /login 页里 send-otp 之类的接口也触发跳转
+        const onLoginPage = window.location.pathname.startsWith("/login")
+        if (!onLoginPage) {
+          localStorage.removeItem("token")
+          // 加 ?expired=1 让 login 页可以提示"会话已过期"
+          window.location.href = "/login?expired=1"
+        }
+      }
+      return Promise.reject(err)
+    },
+  )
 }
 
 // ---------- 仅 mock 模式使用的本地状态 ----------
@@ -346,6 +367,112 @@ export const planApi = {
     }
     const res = await http.get<PlanStatusResponse>(`/api/plan/${id}/status`)
     return res.data
+  },
+
+  /**
+   * v2.3 slice 2：重新生成计划（带钉住 + 自定义顺序）。
+   *
+   * 钉住的 Day 不会被 AI 重生，其他 Day 重新拆解。
+   * dayOrder 是用户拖拽后的顺序（按 day number 数组），后端应保持这个顺序。
+   *
+   * 后端接口（暂未实现，D 后续做）：
+   *   POST /api/plan/:planId/regenerate
+   *   body: { pinnedDays: number[], dayOrder: number[] }
+   *   resp: { plan: StudyPlan }   // 新 plan，对应新 planId
+   *
+   * 前端在 mock 模式 / 接口未上线时走 fallback：
+   *   假装重生 800ms，返回原 plan，让 UI 提示"完成"，
+   *   实际让用户继续看原 plan（这是 graceful degradation）。
+   */
+  async regenerate(
+    planId: string,
+    opts: { pinnedDays: number[]; dayOrder: number[] },
+  ): Promise<PlanDetailResponse> {
+    if (USE_MOCK) {
+      await delay(800)
+      // mock 模式：复用 planApi.get 拿到完整 plan（带 planData.days）
+      // 然后给非钉住的 Day 换 topic/goal 模拟"AI 重生"
+      const original = await planApi.get(planId)
+      const oldDays = original.plan.planData?.days ?? []
+      console.log(
+        "[mock regenerate] planId=",
+        planId,
+        "oldDays.length=",
+        oldDays.length,
+        "pinnedDays=",
+        opts.pinnedDays,
+      )
+
+      // 防御：找不到原 plan 或没有 days 时也要构造一份能用的（按 totalDays 兜底）
+      const totalDays = original.plan.totalDays || 14
+      const baseDays =
+        oldDays.length > 0
+          ? oldDays
+          : Array.from({ length: totalDays }, (_, i) => ({
+              day: i + 1,
+              date: new Date(Date.now() + i * 86400000)
+                .toISOString()
+                .slice(0, 10),
+              topics: [`第${i + 1}章主题`],
+              goals: [`完成第${i + 1}章内容学习与练习`],
+              estimatedMinutes: 60,
+            }))
+
+      const v = mockVaultStore.find((x) => x.id === original.plan.vaultId)
+      const subject = detectSubject(v?.filename ?? "")
+      // 用一个明显能看出差异的版本号后缀，每次重生递增
+      const v2suffix = ` · 重生 ${new Date().toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })}`
+
+      const regeneratedDays = baseDays.map((d) => {
+        if (opts.pinnedDays.includes(d.day)) {
+          return d // 钉住的不动
+        }
+        // 非钉住的换内容（mock 重生）—— 加重生时间戳让用户能看到差异
+        return {
+          ...d,
+          topics: [`${getTopicForDay(subject, d.day)}${v2suffix}`],
+          goals: [`${getGoalForDay(subject, d.day)}`],
+          estimatedMinutes: d.estimatedMinutes ?? 60,
+        }
+      })
+
+      console.log(
+        "[mock regenerate] returning",
+        regeneratedDays.length,
+        "days, sample:",
+        regeneratedDays[0],
+      )
+
+      return {
+        plan: {
+          ...original.plan,
+          planData: {
+            title: original.plan.title,
+            totalDays,
+            days: regeneratedDays,
+          },
+        },
+      }
+    }
+    try {
+      const res = await http.post<PlanDetailResponse>(
+        `/api/plan/${planId}/regenerate`,
+        opts,
+      )
+      return res.data
+    } catch (e: unknown) {
+      // 后端接口还没上线：404 fallback 到"重生未实现"提示，仍返回原 plan 让 UI 不崩
+      const status = (e as { response?: { status?: number } })?.response?.status
+      if (status === 404) {
+        const cached = await planApi.get(planId)
+        return cached
+      }
+      throw e
+    }
   },
 }
 
