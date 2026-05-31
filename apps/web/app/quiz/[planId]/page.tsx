@@ -13,6 +13,7 @@ import {
 import { questionApi, planApi } from "@/lib/api"
 import type { Question, AnswerKey, AnswerResponse, AgentPersonality } from "@/lib/types"
 import PersonalitySwitcher from "@/components/PersonalitySwitcher"
+import FeedbackButton from "@/components/FeedbackButton"
 import { getActivePersonality, recordAnswer, getStudiedDays } from "@/lib/sandboxStore"
 
 interface AnswerRecord {
@@ -771,6 +772,8 @@ export default function QuizPage() {
             result={result}
             question={question}
             topic={dayTopics[question.dayIndex] || ""}
+            vaultId={vaultId}
+            personality={getActivePersonality(vaultId) || "student"}
             onNext={handleNext}
             isLast={index >= questions.length - 1}
           />
@@ -786,12 +789,16 @@ function AnswerExplanation({
   result,
   question,
   topic,
+  vaultId,
+  personality,
   onNext,
   isLast,
 }: {
   result: AnswerResponse
   question: Question
   topic: string
+  vaultId: string
+  personality: AgentPersonality
   onNext: () => void
   isLast: boolean
 }) {
@@ -875,10 +882,23 @@ function AnswerExplanation({
         topic={topic}
       />
 
-      <button onClick={onNext} className="mt-5 nt-btn-primary">
-        {isLast ? "完成练习" : "下一题"}
-        <ArrowRight className="w-4 h-4" />
-      </button>
+      {/* v2.3：报错按钮 —— 跟"下一题"同一行，避免视觉负担 */}
+      <div className="mt-5 flex items-center justify-between gap-3">
+        {vaultId ? (
+          <FeedbackButton
+            vaultId={vaultId}
+            personality={personality}
+            itemId={question.id}
+            itemType="question"
+          />
+        ) : (
+          <span />
+        )}
+        <button onClick={onNext} className="nt-btn-primary">
+          {isLast ? "完成练习" : "下一题"}
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   )
 }

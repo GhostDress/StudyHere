@@ -7,6 +7,7 @@ import authRoute from "./routes/auth.route"
 import vaultRoute from "./routes/vault.route"
 import planRoute from "./routes/plan.route"
 import practiceRoute from "./routes/practice.route"
+import chatRoute from "./routes/chat.route"
 import { startSrsCron } from "./workers/srsNotifier"
 
 const app = new Hono()
@@ -35,6 +36,7 @@ app.route("/api/auth", authRoute)
 app.route("/api/vault", vaultRoute)
 app.route("/api/plan", planRoute)
 app.route("/api", practiceRoute)
+app.route("/api/chat", chatRoute)
 
 const port = parseInt(process.env.PORT || "3001")
 console.log(`🚀 StudyHere API running on http://localhost:${port}`)

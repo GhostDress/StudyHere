@@ -97,6 +97,23 @@ interface SandboxData {
   studyDays: number
   // 沙箱首次激活时间
   createdAt: string
+  // v2.3：用户对 AI 提炼内容的反馈（itemId = flashcardId 或 questionId）
+  userFeedback: Record<
+    string,
+    {
+      tag: "wording" | "off_topic" | "redundant"
+      comment?: string
+      at: string
+      itemType: "flashcard" | "question"
+    }
+  >
+}
+
+export type FeedbackTag = "wording" | "off_topic" | "redundant"
+export const FEEDBACK_TAG_LABELS: Record<FeedbackTag, string> = {
+  wording: "措辞不准",
+  off_topic: "偏离原文",
+  redundant: "重复冗余",
 }
 
 function emptySandbox(): SandboxData {
@@ -107,6 +124,7 @@ function emptySandbox(): SandboxData {
     wrongQuestionMeta: {},
     studyDays: 0,
     createdAt: new Date().toISOString(),
+    userFeedback: {},
   }
 }
 
@@ -121,6 +139,7 @@ function normalizeSandbox(raw: Partial<SandboxData> | undefined): SandboxData {
     answerRecords: raw.answerRecords ?? {},
     wrongQuestionIds: raw.wrongQuestionIds ?? [],
     wrongQuestionMeta: raw.wrongQuestionMeta ?? {},
+    userFeedback: raw.userFeedback ?? {},
   }
 }
 
@@ -286,6 +305,89 @@ export function recordAnswer(
       wrongQuestionMeta: newMeta,
     }
   })
+}
+
+// ============ v2.3：用户对 AI 提炼内容的反馈 ============
+
+/**
+ * 报错：用户认为这条提炼有问题
+ * itemId = flashcardId 或 questionId
+ */
+export function reportFeedback(
+  vaultId: string,
+  personality: AgentPersonality,
+  itemId: string,
+  itemType: "flashcard" | "question",
+  tag: FeedbackTag,
+  comment?: string,
+): void {
+  updateSandbox(vaultId, personality, (s) => ({
+    ...s,
+    userFeedback: {
+      ...s.userFeedback,
+      [itemId]: {
+        tag,
+        comment: comment?.trim() || undefined,
+        at: new Date().toISOString(),
+        itemType,
+      },
+    },
+  }))
+}
+
+/**
+ * 撤销报错（用户改主意了）
+ */
+export function clearFeedback(
+  vaultId: string,
+  personality: AgentPersonality,
+  itemId: string,
+): void {
+  updateSandbox(vaultId, personality, (s) => {
+    const next = { ...s.userFeedback }
+    delete next[itemId]
+    return { ...s, userFeedback: next }
+  })
+}
+
+/**
+ * 取某 item 的反馈状态（undefined = 未报错）
+ */
+export function getFeedback(
+  vaultId: string,
+  personality: AgentPersonality,
+  itemId: string,
+): SandboxData["userFeedback"][string] | undefined {
+  const sandbox = getSandbox(vaultId, personality)
+  return sandbox.userFeedback[itemId]
+}
+
+/**
+ * 跨人格聚合反馈统计（「进度」Tab 的"你对 AI 的影响"小块用）
+ * 返回：总报错数 / 按 tag 分组 / 按 itemType 分组
+ */
+export function getFeedbackSummary(vaultId: string): {
+  total: number
+  byTag: Record<FeedbackTag, number>
+  byType: { flashcard: number; question: number }
+} {
+  const summary = {
+    total: 0,
+    byTag: { wording: 0, off_topic: 0, redundant: 0 } as Record<
+      FeedbackTag,
+      number
+    >,
+    byType: { flashcard: 0, question: 0 },
+  }
+  for (const p of ALL_PERSONALITIES) {
+    const sandbox = getSandbox(vaultId, p)
+    for (const fb of Object.values(sandbox.userFeedback)) {
+      summary.total += 1
+      summary.byTag[fb.tag] += 1
+      summary.byType[fb.itemType] += 1
+    }
+  }
+  return summary
 }
 
 // ============ v2.2.1：从沙箱反推"今日 / 累计已学" dayIndex 集合 ============

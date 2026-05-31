@@ -24,6 +24,7 @@ import type {
   WrongQuestionListResponse,
   Vault,
   VaultStatus,
+  ChatAnswerResponse,
 } from "./types"
 import {
   mockUser,
@@ -491,6 +492,60 @@ export const wrongQuestionApi = {
       return { wrongQuestions: [...mockWrongQuestions] }
     }
     const res = await http.get<WrongQuestionListResponse>("/api/wrong-question")
+    return res.data
+  },
+}
+
+// ============================================================
+// v2.3 · AI 对话（RAG）
+// ============================================================
+
+export const chatApi = {
+  /**
+   * 基于 vault 的 chunks 做 RAG 问答。
+   * @param vaultId 资料 ID
+   * @param question 用户问题（≤ 500 字）
+   */
+  async ask(vaultId: string, question: string): Promise<ChatAnswerResponse> {
+    if (USE_MOCK) {
+      await delay(1200) // 模拟 AI 推理延迟
+      // Mock 简单实现：根据 question 关键词假装答
+      const hit = /MVP|PMF|敏捷|画像|定义|是什么/.test(question)
+      if (!hit) {
+        return {
+          answer:
+            "根据你上传的资料，这部分内容我没有找到。建议你换个问法，或上传更多相关资料。",
+          sources: [],
+          notFound: true,
+        }
+      }
+      return {
+        answer:
+          "「MVP」是 Minimum Viable Product，最小可行产品，指用最小成本验证假设的版本。原文里把它和 PMF 配套讲，强调「先做最少功能、跑用户反馈、再迭代」的闭环。📖 来自 P12, P15",
+        sources: [
+          {
+            id: "mock-c-1",
+            text: "MVP（Minimum Viable Product）= 最小可行产品。核心目的不是做完整功能，而是用最低成本验证最关键的假设……",
+            pageStart: 12,
+            pageEnd: 12,
+            orderIndex: 11,
+            similarity: 0.82,
+          },
+          {
+            id: "mock-c-2",
+            text: "MVP 与 PMF 的关系：MVP 是手段，PMF（Product-Market Fit）是目标。用 MVP 跑数据，找到 PMF 信号后再 scale……",
+            pageStart: 15,
+            pageEnd: 15,
+            orderIndex: 14,
+            similarity: 0.74,
+          },
+        ],
+        notFound: false,
+      }
+    }
+    const res = await http.post<ChatAnswerResponse>(`/api/chat/${vaultId}`, {
+      question,
+    })
     return res.data
   },
 }

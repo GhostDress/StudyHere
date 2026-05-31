@@ -9,12 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@tanstack/react-query": "^5.40.0",
     "axios": "^1.7.2",
     "lucide-react": "^1.16.0",
     "next": "14.2.3",
+    "pdfjs-dist": "^5.7.284",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-pdf": "^10.4.1",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

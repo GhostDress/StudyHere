@@ -17,26 +17,20 @@ import {
   FileQuestion,
 } from "lucide-react"
 import { planApi } from "@/lib/api"
-import type { StudyPlan, AgentPersonality } from "@/lib/types"
+import type { StudyPlan, AgentPersonality, PlanData, PlanDay } from "@/lib/types"
 import PersonalitySwitcher from "@/components/PersonalitySwitcher"
-import { getActivePersonality, getSandbox, getStudiedDays } from "@/lib/sandboxStore"
-
-interface PlanDay {
-  day: number
-  date: string
-  topics: string[]
-  goals: string[]
-  estimatedMinutes: number
-}
-
-interface PlanData {
-  title: string
-  totalDays: number
-  days: PlanDay[]
-}
+import ChatTab from "@/components/ChatTab"
+import {
+  getActivePersonality,
+  getSandbox,
+  getStudiedDays,
+  getFeedbackSummary,
+  FEEDBACK_TAG_LABELS,
+} from "@/lib/sandboxStore"
 
 // PRD v2.1 §6.2 要求的 Tab 结构：学·练·考·纠·进度
-type TabKey = "study" | "practice" | "exam" | "wrong" | "progress"
+// v2.3：加「问 AI」(RAG 对话)
+type TabKey = "study" | "practice" | "exam" | "wrong" | "progress" | "ask"
 
 const TABS: Array<{
   key: TabKey
@@ -49,6 +43,7 @@ const TABS: Array<{
   { key: "exam", label: "考", Icon: ClipboardCheck, desc: "阶段测验" },
   { key: "wrong", label: "纠", Icon: AlertCircle, desc: "错题本" },
   { key: "progress", label: "进度", Icon: BarChart3, desc: "学习追踪" },
+  { key: "ask", label: "问 AI", Icon: Sparkles, desc: "基于资料的问答" },
 ]
 
 export default function PlanDetailPage() {
@@ -229,6 +224,7 @@ export default function PlanDetailPage() {
           <WrongTab planId={plan.id} vaultId={plan.vaultId} />
         )}
         {tab === "progress" && <ProgressTab vaultId={plan.vaultId} />}
+        {tab === "ask" && <ChatTab vaultId={plan.vaultId} />}
       </div>
     </main>
   )
@@ -1053,6 +1049,8 @@ function ProgressTab({ vaultId }: { vaultId: string }) {
     correctCount: number
     wrongCount: number
   }>({ flashcardCount: 0, answeredCount: 0, correctCount: 0, wrongCount: 0 })
+  // v2.3：跨人格聚合反馈统计
+  const [feedback, setFeedback] = useState<ReturnType<typeof getFeedbackSummary> | null>(null)
 
   useEffect(() => {
     const cur = getActivePersonality(vaultId) || "student"
@@ -1065,6 +1063,7 @@ function ProgressTab({ vaultId }: { vaultId: string }) {
       correctCount: answered.filter((a) => a.isCorrect).length,
       wrongCount: sandbox.wrongQuestionIds.length,
     })
+    setFeedback(getFeedbackSummary(vaultId))
   }, [vaultId])
 
   const accuracy =
@@ -1080,10 +1079,80 @@ function ProgressTab({ vaultId }: { vaultId: string }) {
         <StatBox label="答题正确率" value={`${accuracy}%`} />
         <StatBox label="错题数" value={String(stats.wrongCount)} highlight={stats.wrongCount > 0} />
       </div>
+
+      {/* v2.3：你对 AI 的影响（0 反馈时隐藏，避免空状态） */}
+      {feedback && feedback.total > 0 && (
+        <div className="rounded-xl border border-[#e9e9e8] bg-gradient-to-br from-[#fbfbfa] to-[#f4f0fb] p-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[16px]">📊</span>
+            <h3 className="text-[14px] font-semibold text-[#37352f]">你对 AI 的影响</h3>
+            <span className="text-[11px] text-[#9b9a97] ml-auto">跨全部人格聚合</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            <FeedbackStat label="累计反馈" value={feedback.total} highlight />
+            <FeedbackStat label="闪卡相关" value={feedback.byType.flashcard} />
+            <FeedbackStat label="题目相关" value={feedback.byType.question} />
+          </div>
+
+          <div className="border-t border-[#e9e9e8] pt-3">
+            <p className="text-[11px] text-[#787774] mb-2 font-semibold">反馈类型分布</p>
+            <div className="space-y-1.5">
+              {(Object.keys(feedback.byTag) as Array<keyof typeof feedback.byTag>).map((tag) => {
+                const count = feedback.byTag[tag]
+                const pct = feedback.total > 0 ? Math.round((count / feedback.total) * 100) : 0
+                return (
+                  <div key={tag} className="flex items-center gap-2 text-[12px]">
+                    <span className="text-[#37352f] min-w-[60px]">{FEEDBACK_TAG_LABELS[tag]}</span>
+                    <div className="flex-1 h-1.5 bg-[#e9e9e8] rounded overflow-hidden">
+                      <div
+                        className="h-full bg-[#6940a5]"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-[#9b9a97] min-w-[40px] text-right">
+                      {count} 次
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <p className="text-[11px] text-[#9b9a97] italic mt-3">
+            💡 你的反馈会进入 AI 生成上下文，影响同主题的下次提炼（v2.3.1 联调后真正生效）
+          </p>
+        </div>
+      )}
+
       <div className="text-sm text-[#9b9a97] text-center pt-3">
         当前展示「{personality === "student" ? "学生党" : personality === "cert" ? "考证型" : personality === "explorer" ? "兴趣探索" : "严苛教练"}」风格的进度。<br />
         跨人格对比视图将在批 2 实施。
       </div>
+    </div>
+  )
+}
+
+function FeedbackStat({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string
+  value: number
+  highlight?: boolean
+}) {
+  return (
+    <div className="rounded-lg bg-white border border-[#e9e9e8] p-2.5 text-center">
+      <div
+        className={[
+          "text-xl font-bold leading-tight",
+          highlight ? "text-[#6940a5]" : "text-[#37352f]",
+        ].join(" ")}
+      >
+        {value}
+      </div>
+      <div className="text-[11px] text-[#787774] mt-0.5">{label}</div>
     </div>
   )
 }

@@ -4,8 +4,9 @@ import path from "node:path"
 import { prisma } from "../lib/prisma"
 import { supabaseAdmin, STORAGE_BUCKET } from "../lib/supabase"
 
-import { parseFile } from "../services/parser.service"
+import { parseFileWithPages } from "../services/parser.service"
 import { generatePlan, generateFlashcards, generateQuestions } from "../services/plan.service"
+import { buildChunksFromText, embedChunksForVault } from "../services/chunk.service"
 
 const DEFAULT_PLAN_DAYS = 14
 const FLASHCARDS_PER_DAY = 10
@@ -62,14 +63,39 @@ export async function processVault(vaultId: string): Promise<void> {
     await writeFile(tmpFilePath, buffer)
     console.log(`[Worker] 文件已下载到: ${tmpFilePath} (${buffer.length} bytes)`)
 
-    // 4. 提取文字内容
+    // 4. 提取文字内容 + 页码映射（v2.3 slice 2 改造）
     const mimeType = blob.type || guessMimeByFilename(vault.filename)
-    const textContent = await parseFile(tmpFilePath, mimeType)
-    console.log(`[Worker] 解析完成，文字长度: ${textContent.length}`)
+    const { text: textContent, pageMap } = await parseFileWithPages(
+      tmpFilePath,
+      mimeType,
+    )
+    console.log(
+      `[Worker] 解析完成，文字 ${textContent.length} 字符 · ${pageMap.pages.length} 页`,
+    )
 
     await prisma.vault.update({
       where: { id: vaultId },
       data: { textContent },
+    })
+
+    // 4.1 v2.3 slice 2：切 chunks 入库 + 算向量（RAG 基础设施）
+    //    入库即可触发 plan 生成（chunks 已就绪，等向量算完才能 RAG 检索，
+    //    但 plan/flashcard 生成只需要 text 不需要向量，所以先 commit 后跑 embed）
+    await buildChunksFromText({
+      vaultId: vault.id,
+      documentId: null,
+      text: textContent,
+      pageMap,
+      startOrderIndex: 0,
+    })
+
+    // 异步算向量（不 await，让 plan 流程先跑——算 1k 向量约 5 秒，平行干）
+    // 注意：异步抛错不能炸主流程，单独 catch 记日志
+    embedChunksForVault(vault.id).catch((e) => {
+      console.error(
+        `[Worker] ⚠️ vault ${vault.id} 向量回填失败（不阻塞主流程）:`,
+        e instanceof Error ? e.message : e,
+      )
     })
 
     // 5. 生成学习计划
