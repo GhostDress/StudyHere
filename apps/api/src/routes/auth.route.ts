@@ -71,7 +71,8 @@ auth.post("/login", async (c) => {
   // 之前无 try/catch，校验通过后 oTP.update / user.upsert / signToken 任一抛错
   // 都会被 Hono 默认处理器吞成「裸 500」——前端只看到 500、看不到原因，
   // 服务端日志也没有清晰标记，排查极难。
-  // 这里捕获后用固定前缀打印完整错误，并把简要原因返回给前端（上线前诊断用）。
+  // 这里捕获后用 [LOGIN_500] 固定前缀打印完整错误到服务端日志（pm2 logs 可查），
+  // 前端只收到通用的「登录处理失败」，不暴露内部错误细节。
   try {
     const otp = await prisma.oTP.findFirst({
       where: {
@@ -115,16 +116,7 @@ auth.post("/login", async (c) => {
     const message = err instanceof Error ? err.message : String(err)
     // [LOGIN_500] 前缀方便在 pm2 logs 里一眼定位
     console.error("[LOGIN_500] 登录失败:", name, codeStr ?? "", message, err)
-    return c.json(
-      {
-        error: "登录处理失败",
-        // 上线前临时回传诊断信息，定位到根因后删除这三行
-        _debugName: name,
-        _debugCode: codeStr,
-        _debugMessage: message,
-      },
-      500,
-    )
+    return c.json({ error: "登录处理失败" }, 500)
   }
 })
 
