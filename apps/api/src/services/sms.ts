@@ -73,8 +73,10 @@ export async function sendVerifyCode(phone: string): Promise<void> {
     phoneNumber: phone,
     signName: SIGN_NAME!,
     templateCode: TEMPLATE_CODE!,
-    // ##code## 是占位符，阿里云生成真实验证码后替换；模板变量名须与模板正文 ${code} 一致
-    templateParam: JSON.stringify({ code: "##code##" }),
+    // 模板含两个变量，必须都传，否则阿里云报 isv.INVALID_PARAMETERS「模板内容与模板参数不匹配」：
+    //   ##code## —— 占位符，阿里云生成真实验证码后替换（变量名须与模板正文 ${code} 一致）
+    //   min      —— 有效分钟数，须与模板正文 ${min} 一致，且与下方 validTime 对齐（600s = 10min）
+    templateParam: JSON.stringify({ code: "##code##", min: "10" }),
     codeLength: 6,
     validTime: 600,
   })
