@@ -8,6 +8,69 @@ const plan = new Hono<{ Variables: AuthVariables }>()
 
 plan.use("*", authMiddleware)
 
+// 与 worker 保持一致的默认天数（worker 也写死 14）
+const DEFAULT_PLAN_DAYS = 14
+
+/**
+ * 自愈：修复「vault 已 done 但没有对应 plan」的数据不一致。
+ *
+ * 背景：正常流水线里 worker 是在 studyPlan.create 成功后才把 vault 标 done，
+ * 所以 done 理应蕴含 plan 存在。但历史上存在旧版 worker / 半截运行留下的脏数据，
+ * 表现为 vault.status=done 却查不到 plan，导致前端跳到 /plan-confirm/:id 后 404。
+ *
+ * 策略：用 vault 里已存的 textContent 直接重新生成 plan（不重下载、不重切 chunk），
+ * 生成成功补建 studyPlan 记录。整个过程在后台 fire-and-forget，前端继续轮询即可。
+ *
+ * 并发安全：用 updateMany(where status=done → processing) 原子抢占，
+ * 只有把状态从 done 翻成 processing 成功的那一次请求才真正补生成，
+ * 后续 1.5s 一次的轮询看到 processing 就不会重复触发。
+ */
+async function repairMissingPlan(vaultId: string): Promise<void> {
+  const claimed = await prisma.vault.updateMany({
+    where: { id: vaultId, status: "done" },
+    data: { status: "processing", errorMsg: null },
+  })
+  if (claimed.count === 0) return // 别的轮询已抢到，直接退出
+
+  try {
+    const v = await prisma.vault.findUnique({
+      where: { id: vaultId },
+      select: { userId: true, textContent: true },
+    })
+    if (!v?.textContent) {
+      await prisma.vault.update({
+        where: { id: vaultId },
+        data: { status: "failed", errorMsg: "资料文本缺失，无法补生成计划，请重新上传" },
+      })
+      return
+    }
+
+    const generated = await generatePlan(v.textContent, DEFAULT_PLAN_DAYS)
+    await prisma.studyPlan.create({
+      data: {
+        userId: v.userId,
+        vaultId,
+        title: generated.title,
+        totalDays: generated.totalDays,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        planData: generated as any,
+      },
+    })
+    await prisma.vault.update({
+      where: { id: vaultId },
+      data: { status: "done" },
+    })
+    console.log(`[plan.repair] ✅ vault ${vaultId} 缺失的 plan 已补生成`)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error(`[plan.repair] ❌ vault ${vaultId} 补生成失败:`, msg)
+    await prisma.vault.update({
+      where: { id: vaultId },
+      data: { status: "failed", errorMsg: msg },
+    })
+  }
+}
+
 // GET /api/plan — 当前用户所有学习计划
 plan.get("/", async (c) => {
   const user = c.get("user")
@@ -85,6 +148,24 @@ plan.get("/:id/status", async (c) => {
       where: { vaultId: vault.id, userId: user.userId },
       select: { id: true },
     })
+
+    // 自愈：vault 已 done 但查不到 plan（脏数据）→ 后台补生成，
+    // 并对外暂时报 processing，让前端继续轮询而不是跳到 plan-confirm 吃 404。
+    if (!plan && vault.status === "done") {
+      repairMissingPlan(vault.id).catch((e) => {
+        console.error(
+          `[plan.status] ⚠️ vault ${vault.id} 自愈补生成触发失败:`,
+          e instanceof Error ? e.message : e,
+        )
+      })
+      return c.json({
+        vaultId: vault.id,
+        planId: undefined,
+        status: "processing",
+        errorMsg: null,
+      })
+    }
+
     return c.json({
       vaultId: vault.id,
       planId: plan?.id,
