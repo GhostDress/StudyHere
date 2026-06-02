@@ -43,6 +43,16 @@ export async function parseFileWithPages(
     try {
       const result = await parser.getText({ partial: false })
       return buildPagedResult(result.pages)
+    } catch (err) {
+      // 加密 PDF：底层 pdfjs 抛 PasswordException，message 形如
+      //   "No password given" / "Incorrect Password"。
+      // 直接把英文报错甩给前端用户看不懂，这里转成中文友好提示。
+      if (isPdfPasswordError(err)) {
+        throw new Error(
+          "该 PDF 已加密（设置了打开密码），无法解析。请用未加密的 PDF，或先去掉密码后重新上传。",
+        )
+      }
+      throw err
     } finally {
       // 释放底层 pdfjs 文档，避免内存/句柄泄漏
       await parser.destroy?.().catch?.(() => {})
@@ -93,6 +103,26 @@ export async function parseFile(
 // ============================================================
 // 内部工具
 // ============================================================
+
+/**
+ * 判断异常是否为「PDF 加密 / 需要密码」类报错。
+ *
+ * pdfjs（pdf-parse 底层）对加密文档抛 PasswordException：
+ *   - 没给密码：message = "No password given"
+ *   - 密码错误：message = "Incorrect Password"
+ * 不同版本 name 可能是 "PasswordException"，但 message 文本较稳定，双重判断更保险。
+ */
+function isPdfPasswordError(err: unknown): boolean {
+  if (!err) return false
+  const name = (err as { name?: string }).name ?? ""
+  const message = err instanceof Error ? err.message : String(err)
+  return (
+    name === "PasswordException" ||
+    /no password given/i.test(message) ||
+    /incorrect password/i.test(message) ||
+    /password/i.test(message)
+  )
+}
 
 interface RawPdfPage {
   num: number
