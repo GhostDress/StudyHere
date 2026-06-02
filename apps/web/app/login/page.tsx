@@ -1,11 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
 import { authApi } from "@/lib/api"
 
+// Next.js 14：任何用 useSearchParams() 的客户端组件，静态预渲染时
+// 必须包在 <Suspense> 边界内，否则 build 阶段 prerender /login 直接报错退出
+// （error: useSearchParams() should be wrapped in a suspense boundary）。
+// 所以把原逻辑拆成 LoginForm，默认导出再用 Suspense 兜一层。
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-white" />}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
