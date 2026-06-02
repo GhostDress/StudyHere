@@ -160,7 +160,11 @@ function generateDynamicQuestionsForPlan(planId: string) {
 //   改成浏览器直接打后端 HTTPS 子域名，CORS 已允许 studyhere.com.cn，登录态走
 //   localStorage token（非 cookie），无跨站 cookie 问题。
 //   本地开发请在 apps/web/.env.local 里设 NEXT_PUBLIC_API_URL=http://localhost:3001。
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.studyhere.com.cn"
+// 注意：这里用 || 而不是 ??。
+// 若 EdgeOne 环境变量 NEXT_PUBLIC_API_URL 被设成空字符串 ""，?? 不会兜底（?? 只挡 null/undefined），
+// BASE_URL 会变成 "" → 走同源 /api 边缘代理（已删）→ 全量 500。
+// 用 || 后，空字符串也会回退到生产后端 HTTPS 子域名，彻底防呆。
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.studyhere.com.cn"
 
 const http = axios.create({ baseURL: BASE_URL })
 
