@@ -26,13 +26,24 @@ plan.get("/", async (c) => {
 })
 
 // GET /api/plan/:id — 单个计划完整详情
+// 注意：:id 既可能是 planId，也可能是 vaultId（前端某些路径会把 vaultId 拼进
+// /plan-confirm/[planId]，导致按 planId 查不到→404）。这里做容错：先按 planId 查，
+// 查不到时再把它当 vaultId 反查对应的 plan，使端点对两种 id 都健壮。
 plan.get("/:id", async (c) => {
   const user = c.get("user")
   const id = c.req.param("id")
 
-  const record = await prisma.studyPlan.findFirst({
+  let record = await prisma.studyPlan.findFirst({
     where: { id, userId: user.userId },
   })
+
+  // 兜底：按 vaultId 反查（同一用户名下该 vault 最新的 plan）
+  if (!record) {
+    record = await prisma.studyPlan.findFirst({
+      where: { vaultId: id, userId: user.userId },
+      orderBy: { createdAt: "desc" },
+    })
+  }
 
   if (!record) return c.json({ error: "学习计划不存在" }, 404)
   return c.json({ plan: record })
