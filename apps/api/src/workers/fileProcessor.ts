@@ -99,7 +99,10 @@ export async function processVault(vaultId: string): Promise<void> {
     })
 
     // 5. 生成学习计划
-    const plan = await generatePlan(textContent, DEFAULT_PLAN_DAYS)
+    // v2.3 slice 2：传 pageMap 给 generatePlan，让 AI 输出 sourcePages
+    const plan = await generatePlan(textContent, DEFAULT_PLAN_DAYS, {
+      pageMap,
+    })
 
     const studyPlan = await prisma.studyPlan.create({
       data: {

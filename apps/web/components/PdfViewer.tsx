@@ -30,13 +30,14 @@ interface PdfViewerProps {
 //   - 空 URL
 //   - mock:// 开头（mock 上传产生的）
 //   - file:// 本地路径（CORS 也会炸）
-//   - rcpwlkdofuymxyrkrcms.supabase.co 那个 Supabase 项目已经无效，
-//     mockData.ts 里 vlt-001/002/003 的 fileUrl 指向它，加载会 404/CORS
+//
+// 注：之前在这里加过 rcpwlkdofuymxyrkrcms.supabase.co 黑名单 —— 错误判断！
+// 那个域名其实是项目的真生产 Supabase（D 在那建的 chunks/KG 表）。
+// 真用户上传的 PDF 也存在那个 bucket，所以必须放行。
 function isUnloadableUrl(url: string): boolean {
   if (!url) return true
   if (url.startsWith("mock://")) return true
   if (url.startsWith("file://")) return true
-  if (url.includes("rcpwlkdofuymxyrkrcms.supabase.co")) return true
   return false
 }
 

@@ -9,6 +9,7 @@
 
 import OpenAI from "openai"
 import { composeSystemPrompt } from "../prompts/personalities"
+import type { PageMap } from "../lib/chunker"
 
 // ---------- 类型定义（与 fileProcessor.ts 里的结构保持一致）----------
 
@@ -18,6 +19,14 @@ export interface PlanDay {
   topics: string[]
   goals: string[]
   estimatedMinutes: number
+
+  // ---- v2.3 slice 2 信任链路字段（可选，等后端回填）----
+  /** 这一天对应原文页码范围（e.g. [12, 13, 14, 15, 16, 17, 18]）—— PdfDrawer 跳页用 */
+  sourcePages?: number[]
+  /** AI 提炼的核心点 —— 展示在"📖 源于原文"行下 */
+  extractedPoints?: string[]
+  /** AI 解释为什么这天这么拆 —— 折叠展示 */
+  reasoning?: string
 }
 
 export interface StudyPlanResult {
@@ -134,6 +143,33 @@ function truncateText(text: string, maxChars = 6000): string {
   return text.slice(0, maxChars) + "\n...[内容已截断]"
 }
 
+/**
+ * 给文本注入页码 marker：把 pageMap 的页边界处插入 `[P{N}]` 标签。
+ * AI 看到这些 marker 就能在输出 sourcePages 时引用正确的页码。
+ *
+ * 例：
+ *   原文 "...第一页内容...第二页内容..."
+ *   注入后："[P1] ...第一页内容...[P2] ...第二页内容..."
+ *
+ * 没有 pageMap 时返回原文（向后兼容 docx/txt 等无页面概念的文件）。
+ */
+function injectPageMarkers(text: string, pageMap?: PageMap): string {
+  if (!pageMap || pageMap.pages.length === 0) return text
+
+  // 从后往前插入，避免 offset 偏移
+  const pages = [...pageMap.pages].sort((a, b) => b.startOffset - a.startOffset)
+  let result = text
+  for (const p of pages) {
+    if (p.startOffset >= 0 && p.startOffset <= result.length) {
+      result =
+        result.slice(0, p.startOffset) +
+        `[P${p.pageNumber}] ` +
+        result.slice(p.startOffset)
+    }
+  }
+  return result
+}
+
 // ---------- 生成学习计划 ----------
 
 /**
@@ -142,15 +178,40 @@ function truncateText(text: string, maxChars = 6000): string {
  * @param textContent  parseFile 提取的纯文本
  * @param totalDays    计划天数（默认 14）
  */
+export interface GeneratePlanOptions {
+  /** 页码映射 —— 注入 [P{N}] marker 让 AI 输出 sourcePages 时引用真实页码 */
+  pageMap?: PageMap
+  /** 人格 */
+  personality?: string | null
+}
+
 export async function generatePlan(
   textContent: string,
   totalDays: number,
-  personality?: string | null,
+  personalityOrOptions?: string | null | GeneratePlanOptions,
 ): Promise<StudyPlanResult> {
+  // 向后兼容：第三个参数既可以是字符串（旧接口）也可以是 options 对象
+  const opts: GeneratePlanOptions =
+    typeof personalityOrOptions === "object" && personalityOrOptions !== null
+      ? personalityOrOptions
+      : { personality: personalityOrOptions as string | null | undefined }
+
   const today = new Date().toISOString().slice(0, 10)
-  const excerpt = truncateText(textContent, 6000)
+  // 注入页码 marker 让 AI 能输出 sourcePages
+  const textWithPages = injectPageMarkers(textContent, opts.pageMap)
+  const excerpt = truncateText(textWithPages, 8000)
+  const hasPages = !!opts.pageMap && opts.pageMap.pages.length > 0
 
   const taskPrompt = `你是一名专业的学习规划师。用户会给你一份学习材料的文字内容，你需要为用户制定一份系统的 ${totalDays} 天学习计划。
+
+${
+  hasPages
+    ? `**重要**：文本中夹杂了 \`[P1]\` \`[P2]\` 等页码 marker，表示原文的页边界。
+你输出每一天时，**必须**根据 topics 来自原文的哪些页给出 sourcePages（页码数组）。
+`
+    : ""
+}
+
 输出严格为 JSON，格式如下：
 {
   "title": "计划标题（简洁，含材料名称）",
@@ -161,19 +222,30 @@ export async function generatePlan(
       "date": "YYYY-MM-DD",
       "topics": ["今日学习主题1", "主题2"],
       "goals": ["完成目标1", "目标2"],
-      "estimatedMinutes": 60
+      "estimatedMinutes": 60,
+      "sourcePages": [1, 2, 3],
+      "extractedPoints": ["核心点1（精炼到一行）", "核心点2", "核心点3"],
+      "reasoning": "为什么这一天这么拆 —— 2-3 句话，解释这天 topics 在整本资料里的位置/作用/学习路径上的依据"
     }
   ]
 }
+
 要求：
 - 覆盖材料全部核心知识点，循序渐进
 - 每天 topics 1-3 个，goals 1-3 条，estimatedMinutes 30-120
 - date 从 ${today} 开始，每天递增一天
+${
+  hasPages
+    ? '- sourcePages 必须是原文中实际出现的页码（来自 [P{N}] marker），用 number 数组，最多 6 个最相关页'
+    : '- 如果文本没有页码 marker，sourcePages 留空数组 []'
+}
+- extractedPoints 是这天 AI 提炼的 3-5 个核心知识点，每个一行内
+- reasoning 是给用户看的"AI 拆解理由"，要解释**为什么**这天拆出这几个 topic（比如"这是 X 概念的前置基础"、"为后续 Y 章节铺垫"），不要重复 topic 名
 - 只输出 JSON，不要任何额外文字`
 
   const userPrompt = `材料内容如下：\n\n${excerpt}`
 
-  const systemPrompt = composeSystemPrompt(personality, taskPrompt)
+  const systemPrompt = composeSystemPrompt(opts.personality, taskPrompt)
   const result = await callAIJSON<StudyPlanResult>(systemPrompt, userPrompt)
 
   // 安全校验
@@ -181,10 +253,26 @@ export async function generatePlan(
     throw new Error("AI 返回的学习计划结构不完整")
   }
 
+  // 字段净化：确保 sourcePages 是数字数组、extractedPoints 是字符串数组
+  const cleanedDays = result.days.map((d) => ({
+    day: d.day,
+    date: d.date,
+    topics: Array.isArray(d.topics) ? d.topics : [],
+    goals: Array.isArray(d.goals) ? d.goals : [],
+    estimatedMinutes: typeof d.estimatedMinutes === "number" ? d.estimatedMinutes : 60,
+    sourcePages: Array.isArray(d.sourcePages)
+      ? d.sourcePages.filter((n): n is number => typeof n === "number" && n > 0)
+      : [],
+    extractedPoints: Array.isArray(d.extractedPoints)
+      ? d.extractedPoints.filter((s): s is string => typeof s === "string")
+      : [],
+    reasoning: typeof d.reasoning === "string" ? d.reasoning : "",
+  }))
+
   return {
     title: result.title,
-    totalDays: result.days.length,
-    days: result.days,
+    totalDays: cleanedDays.length,
+    days: cleanedDays,
   }
 }
 
