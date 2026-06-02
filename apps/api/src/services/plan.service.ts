@@ -55,7 +55,18 @@ function getAIClient(): OpenAI {
   if (!apiKey) {
     throw new Error("AI_API_KEY 未配置，请在 .env 中填入 DeepSeek API Key")
   }
-  return new OpenAI({ baseURL, apiKey })
+  // ⚠️ 关键：必须显式设 timeout / maxRetries。
+  // OpenAI SDK 默认 timeout=600000ms(10分钟) + maxRetries=2，
+  // 一次卡住的 DeepSeek 请求最坏要 ~30 分钟才放弃，期间 vault 一直停在
+  // processing，前端轮询永远等不到 done/failed → 页面「正在定制计划」无限转圈。
+  // 这里收紧到单请求 60s 超时、最多重试 1 次：卡住的调用会及时抛错，
+  // 流水线 catch 后把 vault 标记 failed，前端轮询拿到 failed 即可退出。
+  return new OpenAI({
+    baseURL,
+    apiKey,
+    timeout: 60_000,
+    maxRetries: 1,
+  })
 }
 
 const AI_MODEL = () => process.env.AI_MODEL || "deepseek-chat"

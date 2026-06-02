@@ -115,44 +115,23 @@ export async function processVault(vaultId: string): Promise<void> {
     })
     console.log(`[Worker] 学习计划已创建: ${studyPlan.id}`)
 
-    // 6. 逐天生成闪卡 + 题目
-    for (const day of plan.days) {
-      const dayContent = `${day.topics.join("、")}：${day.goals.join("；")}`
-
-      const flashcards = await generateFlashcards(dayContent, FLASHCARDS_PER_DAY)
-      if (flashcards.length > 0) {
-        await prisma.flashcard.createMany({
-          data: flashcards.map((f) => ({
-            planId: studyPlan.id,
-            front: f.front,
-            back: f.back,
-            dayIndex: day.day,
-          })),
-        })
-      }
-
-      const questions = await generateQuestions(dayContent, QUESTIONS_PER_DAY)
-      if (questions.length > 0) {
-        await prisma.question.createMany({
-          data: questions.map((q) => ({
-            planId: studyPlan.id,
-            content: q.content,
-            options: q.options as any,
-            correct: q.correct,
-            explanation: q.explanation,
-            dayIndex: day.day,
-          })),
-        })
-      }
-    }
-    console.log(`[Worker] 全部闪卡和题目生成完成`)
-
-    // 7. 标记完成
+    // 6. 立即标记完成 —— plan-confirm 页只读 planData.days，不依赖闪卡/题目。
+    //    ⚠️ 关键修复：以前要等 28 次串行 DeepSeek 调用（10 闪卡 + 5 题 ×14 天）
+    //    全部跑完才标 done，期间前端一直转圈，AI 一慢就「无限转圈」。
+    //    现在 plan 一生成就标 done，前端立刻跳转；闪卡/题目放后台慢慢补。
     await prisma.vault.update({
       where: { id: vaultId },
       data: { status: "done" },
     })
-    console.log(`[Worker] ✅ vault 处理完成: ${vaultId}`)
+    console.log(`[Worker] ✅ vault 处理完成（plan 就绪，闪卡/题目后台生成）: ${vaultId}`)
+
+    // 7. 后台懒生成闪卡 + 题目（不 await，不阻塞主流程，单独 catch 不炸）
+    generateCardsInBackground(studyPlan.id, plan.days).catch((e) => {
+      console.error(
+        `[Worker] ⚠️ plan ${studyPlan.id} 闪卡/题目后台生成失败（不影响计划使用）:`,
+        e instanceof Error ? e.message : e,
+      )
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error(`[Worker] ❌ vault 处理失败: ${vaultId}`, message)
@@ -165,6 +144,61 @@ export async function processVault(vaultId: string): Promise<void> {
       await unlink(tmpFilePath).catch(() => {})
     }
   }
+}
+
+/**
+ * 后台逐天生成闪卡 + 题目。
+ * 每天独立 try/catch：某一天某一类失败不影响其它天，尽量多补一点是一点。
+ * 这个函数在 vault 标记 done 之后才被 fire-and-forget 调用，不阻塞用户进入计划页。
+ */
+async function generateCardsInBackground(
+  planId: string,
+  days: { day: number; topics: string[]; goals: string[] }[],
+): Promise<void> {
+  for (const day of days) {
+    const dayContent = `${day.topics.join("、")}：${day.goals.join("；")}`
+
+    try {
+      const flashcards = await generateFlashcards(dayContent, FLASHCARDS_PER_DAY)
+      if (flashcards.length > 0) {
+        await prisma.flashcard.createMany({
+          data: flashcards.map((f) => ({
+            planId,
+            front: f.front,
+            back: f.back,
+            dayIndex: day.day,
+          })),
+        })
+      }
+    } catch (e) {
+      console.error(
+        `[Worker] ⚠️ 第 ${day.day} 天闪卡生成失败（跳过）:`,
+        e instanceof Error ? e.message : e,
+      )
+    }
+
+    try {
+      const questions = await generateQuestions(dayContent, QUESTIONS_PER_DAY)
+      if (questions.length > 0) {
+        await prisma.question.createMany({
+          data: questions.map((q) => ({
+            planId,
+            content: q.content,
+            options: q.options as any,
+            correct: q.correct,
+            explanation: q.explanation,
+            dayIndex: day.day,
+          })),
+        })
+      }
+    } catch (e) {
+      console.error(
+        `[Worker] ⚠️ 第 ${day.day} 天题目生成失败（跳过）:`,
+        e instanceof Error ? e.message : e,
+      )
+    }
+  }
+  console.log(`[Worker] 📚 plan ${planId} 全部闪卡和题目后台生成完成`)
 }
 
 // 把 Supabase 公开 URL 转换为 bucket 内部路径

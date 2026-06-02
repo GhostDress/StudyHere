@@ -70,8 +70,17 @@ export default function LoadingPage() {
   useEffect(() => {
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | null = null
+    // 轮询兜底超时：最多等 3 分钟。AI 服务异常/卡死时不再无限转圈，
+    // 到点显示「生成超时」并给重试入口，避免用户干等。
+    const POLL_DEADLINE = Date.now() + 3 * 60 * 1000
 
     async function poll() {
+      if (Date.now() > POLL_DEADLINE) {
+        if (!cancelled) {
+          setErrorMsg("生成超时了，可能是 AI 服务繁忙。请返回首页重试。")
+        }
+        return
+      }
       try {
         const res = await planApi.status(vaultId)
         if (cancelled) return
