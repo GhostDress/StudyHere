@@ -119,9 +119,18 @@ export async function checkVerifyCode(
     verifyCode: code,
   })
 
-  const res = await client.checkSmsVerifyCode(req)
-
-  // 关键：success 仅代表请求成功，verifyResult 才代表校验结果。
-  // PASS=通过；UNKNOWN（或缺失）=失败。
-  return res.body?.model?.verifyResult === "PASS"
+  // 阿里云对「验证码错误/已过期」不是返回 verifyResult≠PASS，而是直接抛 isv.ValidateFail（HTTP 400）。
+  // 必须接住并降级为 false（→ auth.route 返回 401「验证码错误或已过期」），
+  // 否则异常冒泡到 /login 会被吞成裸 500，前端只看到「Request failed with status code 500」。
+  // 仅对「校验失败」这一类业务错误降级；其余（网络/凭证等）仍抛出，让上层按真 500 处理。
+  try {
+    const res = await client.checkSmsVerifyCode(req)
+    // success 仅代表请求成功，verifyResult 才代表校验结果：PASS=通过，其余=失败。
+    return res.body?.model?.verifyResult === "PASS"
+  } catch (err) {
+    if ((err as { code?: string })?.code === "isv.ValidateFail") {
+      return false
+    }
+    throw err
+  }
 }
