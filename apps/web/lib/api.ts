@@ -139,7 +139,7 @@ function generateDynamicQuestionsForPlan(planId: string) {
       const item = {
         id: `q-${planId}-${personality}-${day}-${i}`,
         personality,
-        type: q.type,
+        type: q.type ?? "single",
         content: q.content,
         options: q.options,
         correct: q.correct,
@@ -154,9 +154,17 @@ function generateDynamicQuestionsForPlan(planId: string) {
   return result
 }
 
-// v2.2：BASE_URL 为空时走相对路径 ""，由 next.config.js 的 rewrites 代理到生产
-// 这样可以绕开浏览器 CORS（生产服务器 CORS 只允许 EdgeOne 域名）
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
+// v2.4：前端直连后端 HTTPS 子域名 api.studyhere.com.cn。
+//   之前走 EdgeOne 的 app/api/[...slug] 边缘函数代理，但 EdgeOne 边缘函数
+//   禁止向纯 HTTP / 非标准端口（3001）发出站 fetch，导致整个 /api/* 返回 500。
+//   改成浏览器直接打后端 HTTPS 子域名，CORS 已允许 studyhere.com.cn，登录态走
+//   localStorage token（非 cookie），无跨站 cookie 问题。
+//   本地开发请在 apps/web/.env.local 里设 NEXT_PUBLIC_API_URL=http://localhost:3001。
+// 注意：这里用 || 而不是 ??。
+// 若 EdgeOne 环境变量 NEXT_PUBLIC_API_URL 被设成空字符串 ""，?? 不会兜底（?? 只挡 null/undefined），
+// BASE_URL 会变成 "" → 走同源 /api 边缘代理（已删）→ 全量 500。
+// 用 || 后，空字符串也会回退到生产后端 HTTPS 子域名，彻底防呆。
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.studyhere.com.cn"
 
 const http = axios.create({ baseURL: BASE_URL })
 

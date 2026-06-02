@@ -62,24 +62,78 @@ const AI_MODEL = () => process.env.AI_MODEL || "deepseek-chat"
 
 // ---------- 工具函数：调用 AI 并解析 JSON ----------
 
+/**
+ * 调用 AI 并把返回内容解析成 JSON 对象。
+ *
+ * 健壮性处理（针对 DeepSeek 实际表现）：
+ *   1. 显式设 max_tokens=8000：默认 4096 容易把较长的 JSON 截断，
+ *      导致 "questions" 数组只输出一半、结尾缺 } ] → JSON.parse 必失败。
+ *   2. 剥掉偶发的 ```json ... ``` markdown 包裹。
+ *   3. 兜底截取第一个 { 到最后一个 }，去掉模型可能加的前后缀废话。
+ *   4. 失败重试一次（temperature 0.7，重新生成往往就正常了）。
+ *   5. 失败时把完整原文 + finish_reason 打到日志，便于排查（之前只记前 200 字）。
+ */
 async function callAIJSON<T>(systemPrompt: string, userPrompt: string): Promise<T> {
   const client = getAIClient()
-  const response = await client.chat.completions.create({
-    model: AI_MODEL(),
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.7,
-  })
 
-  const raw = response.choices[0]?.message?.content ?? "{}"
-  try {
-    return JSON.parse(raw) as T
-  } catch {
-    throw new Error(`AI 返回的 JSON 格式错误: ${raw.slice(0, 200)}`)
+  const requestOnce = async (): Promise<{ raw: string; finishReason: string | null }> => {
+    const response = await client.chat.completions.create({
+      model: AI_MODEL(),
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 8000, // deepseek-chat 输出上限 8192，留余量避免 JSON 被截断
+    })
+    return {
+      raw: response.choices[0]?.message?.content ?? "",
+      finishReason: response.choices[0]?.finish_reason ?? null,
+    }
   }
+
+  const tryParse = (raw: string): T | null => {
+    const cleaned = raw
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/, "")
+      .replace(/\s*```$/, "")
+      .trim()
+    try {
+      return JSON.parse(cleaned) as T
+    } catch {
+      // 兜底：截取最外层 {...}，去掉模型可能加的前后缀
+      const start = cleaned.indexOf("{")
+      const end = cleaned.lastIndexOf("}")
+      if (start !== -1 && end > start) {
+        try {
+          return JSON.parse(cleaned.slice(start, end + 1)) as T
+        } catch {
+          return null
+        }
+      }
+      return null
+    }
+  }
+
+  // 第 1 次
+  let { raw, finishReason } = await requestOnce()
+  let parsed = tryParse(raw)
+  if (parsed) return parsed
+
+  console.error(
+    `[plan.service] JSON 解析失败（第1次）finish_reason=${finishReason} 长度=${raw.length}\n----RAW----\n${raw}\n----END----`,
+  )
+
+  // 第 2 次重试
+  ;({ raw, finishReason } = await requestOnce())
+  parsed = tryParse(raw)
+  if (parsed) return parsed
+
+  console.error(
+    `[plan.service] JSON 解析失败（第2次）finish_reason=${finishReason} 长度=${raw.length}\n----RAW----\n${raw}\n----END----`,
+  )
+  throw new Error(`AI 返回的 JSON 格式错误（已重试）: ${raw.slice(0, 200)}`)
 }
 
 // ---------- 截取文本，避免超出 Token 限制 ----------

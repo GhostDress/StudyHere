@@ -55,12 +55,12 @@ async function findUsersToRemind(): Promise<
       select: { userId: true },
       distinct: ["userId"],
     })
-    .then((rows) => new Set(rows.map((r) => r.userId)))
+    .then((rows: { userId: string }[]) => new Set(rows.map((r: { userId: string }) => r.userId)))
 
   // 3. 过滤：昨天没有活跃的用户
   return plans
-    .filter((p) => !recentActiveUserIds.has(p.userId))
-    .map((p) => ({
+    .filter((p: (typeof plans)[number]) => !recentActiveUserIds.has(p.userId))
+    .map((p: (typeof plans)[number]) => ({
       userId: p.userId,
       email: p.user.email,
       name: p.user.name,
