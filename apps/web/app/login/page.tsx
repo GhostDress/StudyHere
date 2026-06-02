@@ -20,7 +20,7 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
   const [code, setCode] = useState("")
   const [otpSent, setOtpSent] = useState(false)
   const [countdown, setCountdown] = useState(0)
@@ -39,13 +39,13 @@ function LoginForm() {
 
   async function handleSendOtp() {
     setError("")
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("请输入合法的邮箱地址")
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      setError("请输入合法的手机号")
       return
     }
     setSending(true)
     try {
-      await authApi.sendOtp(email)
+      await authApi.sendOtp(phone)
       setOtpSent(true)
       setCountdown(60)
       const timer = setInterval(() => {
@@ -66,12 +66,12 @@ function LoginForm() {
 
   async function handleLogin() {
     setError("")
-    if (!email) return setError("请先填写邮箱")
+    if (!phone) return setError("请先填写手机号")
     if (!/^\d{6}$/.test(code)) return setError("验证码必须是 6 位数字")
 
     setLogging(true)
     try {
-      const res = await authApi.login(email, code)
+      const res = await authApi.login(phone, code)
       localStorage.setItem("token", res.token)
       localStorage.setItem("user", JSON.stringify(res.user))
       router.push("/home")
@@ -109,7 +109,7 @@ function LoginForm() {
             登录或注册
           </h1>
           <p className="mt-2 text-[14px] text-[#787774] text-center">
-            邮箱即可登录，首次自动创建账户
+            手机号即可登录，首次自动创建账户
           </p>
 
           {expired && (
@@ -121,13 +121,15 @@ function LoginForm() {
           <div className="mt-10 space-y-4">
             <div>
               <label className="block text-[13px] font-medium text-[#37352f] mb-1.5">
-                邮箱地址
+                手机号
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                type="tel"
+                inputMode="numeric"
+                maxLength={11}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                placeholder="请输入手机号"
                 className="nt-input"
               />
             </div>
@@ -165,7 +167,7 @@ function LoginForm() {
               </div>
               {otpSent && (
                 <p className="mt-2 text-xs text-[#6940a5]">
-                  验证码已发送到 {email}
+                  验证码已发送到 {phone}
                 </p>
               )}
             </div>
@@ -179,7 +181,7 @@ function LoginForm() {
             <button
               type="button"
               onClick={handleLogin}
-              disabled={logging || !email || code.length !== 6}
+              disabled={logging || !phone || code.length !== 6}
               className="nt-btn-primary w-full py-2.5"
             >
               {logging ? (
@@ -197,7 +199,7 @@ function LoginForm() {
           </div>
 
           <p className="mt-8 text-[12px] text-[#9b9a97] text-center leading-relaxed">
-            继续即代表同意服务条款 · OTP 登录，不收密码
+            继续即代表同意服务条款 · 短信验证码登录，不收密码
           </p>
         </div>
       </div>

@@ -57,12 +57,15 @@ async function findUsersToRemind(): Promise<
     })
     .then((rows: { userId: string }[]) => new Set(rows.map((r: { userId: string }) => r.userId)))
 
-  // 3. 过滤：昨天没有活跃的用户
+  // 3. 过滤：昨天没有活跃、且仍绑定了邮箱的用户
+  //    v2.3 起 email 可空（新用户走手机号登录、不写 email），
+  //    SRS 提醒目前仅有邮件通道，没邮箱的用户直接跳过，避免发空地址。
   return plans
     .filter((p: (typeof plans)[number]) => !recentActiveUserIds.has(p.userId))
+    .filter((p: (typeof plans)[number]) => Boolean(p.user.email))
     .map((p: (typeof plans)[number]) => ({
       userId: p.userId,
-      email: p.user.email,
+      email: p.user.email as string,
       name: p.user.name,
       planTitle: p.title,
       totalDays: p.totalDays,

@@ -14,9 +14,13 @@ datasource db {
 }
 
 // ---------- 1. 用户 ----------
+// v2.3：登录方式由「邮箱 OTP」切换为「手机号短信验证码」
+//   - phone 为新的登录主键（@unique）
+//   - email 改为可空，保留以兼容历史 SRS 邮件提醒，新用户不再写入
 model User {
   id        String   @id @default(uuid())
-  email     String   @unique
+  phone     String?  @unique
+  email     String?  @unique
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -30,15 +34,16 @@ model User {
 }
 
 // ---------- 2. 验证码 ----------
+// v2.3：按手机号下发/校验（原 email 字段废弃）
 model OTP {
   id        String   @id @default(uuid())
-  email     String
+  phone     String
   code      String
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  @@index([email, code])
+  @@index([phone, code])
   @@map("otps")
 }
 

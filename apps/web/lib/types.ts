@@ -10,9 +10,12 @@ export interface ApiError {
 
 // ---------- 用户 ----------
 
+// v2.3：登录主键由 email 切到 phone（短信验证码登录）。
+// email 仍保留为可选（老用户 / SRS 邮件提醒用），新用户只有 phone。
 export interface User {
   id: string
-  email: string
+  phone: string | null
+  email?: string | null
   name: string
   createdAt?: string
 }

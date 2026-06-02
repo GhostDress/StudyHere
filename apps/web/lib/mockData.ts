@@ -19,7 +19,7 @@ import type {
 
 export const mockUser: User = {
   id: "usr-001",
-  email: "alice@example.com",
+  phone: "13800000000",
   name: "alice",
   createdAt: "2026-05-20T08:00:00.000Z",
 }

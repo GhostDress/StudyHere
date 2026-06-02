@@ -69,7 +69,7 @@ export default function HomePage() {
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
-  const [userEmail, setUserEmail] = useState("")
+  const [userPhone, setUserPhone] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function HomePage() {
     }
     try {
       const u = JSON.parse(localStorage.getItem("user") || "null")
-      if (u?.email) setUserEmail(u.email)
+      if (u?.phone) setUserPhone(u.phone)
     } catch {}
     refreshList()
   }, [router])
@@ -161,7 +161,7 @@ export default function HomePage() {
             </span>
           </div>
           <div className="flex items-center gap-3 text-[13px] text-[#787774]">
-            {userEmail && <span>{userEmail}</span>}
+            {userPhone && <span>{userPhone}</span>}
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[#f1f1ef] transition-colors"

@@ -206,18 +206,18 @@ const mockSentOtps: Record<string, string> = {}
 // ============================================================
 
 export const authApi = {
-  async sendOtp(email: string): Promise<SendOtpResponse> {
+  async sendOtp(phone: string): Promise<SendOtpResponse> {
     if (USE_MOCK) {
       await delay()
-      mockSentOtps[email] = "000000"
-      console.log(`[Mock] 验证码已"发送"到 ${email} —— 任何 6 位数字都能通过`)
+      mockSentOtps[phone] = "000000"
+      console.log(`[Mock] 验证码已"发送"到 ${phone} —— 任何 6 位数字都能通过`)
       return { success: true }
     }
-    const res = await http.post<SendOtpResponse>("/api/auth/send-otp", { email })
+    const res = await http.post<SendOtpResponse>("/api/auth/send-otp", { phone })
     return res.data
   },
 
-  async login(email: string, code: string): Promise<LoginResponse> {
+  async login(phone: string, code: string): Promise<LoginResponse> {
     if (USE_MOCK) {
       await delay()
       if (!/^\d{6}$/.test(code)) {
@@ -226,10 +226,10 @@ export const authApi = {
       return {
         success: true,
         token: makeMockToken(),
-        user: { ...mockUser, email },
+        user: { ...mockUser, phone },
       }
     }
-    const res = await http.post<LoginResponse>("/api/auth/login", { email, code })
+    const res = await http.post<LoginResponse>("/api/auth/login", { phone, code })
     return res.data
   },
 
