@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // /api/* 请求由 app/api/[...slug]/route.ts 代理到后端，无需 rewrite
-  // BACKEND_URL 环境变量控制目标地址，默认 http://82.156.128.150:3001
+  // v2.4：前端直连后端 HTTPS 子域名 https://api.studyhere.com.cn（见 lib/api.ts BASE_URL）。
+  // 已删除原 app/api/[...slug]/route.ts 边缘代理（EdgeOne 边缘函数无法 fetch 纯 HTTP:3001）。
 }
 
 module.exports = nextConfig
