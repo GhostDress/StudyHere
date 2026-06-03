@@ -3,13 +3,18 @@ import { prisma } from "../lib/prisma"
 import { authMiddleware, type AuthVariables } from "../middleware/auth"
 import { generatePlan, type PlanDay } from "../services/plan.service"
 import type { PageMap } from "../lib/chunker"
+import {
+  generatePlanAdvice,
+  type PlanSnapshot,
+} from "../services/planAdvice.service"
 
 const plan = new Hono<{ Variables: AuthVariables }>()
 
 plan.use("*", authMiddleware)
 
 // 与 worker 保持一致的默认天数（worker 也写死 14）
-const DEFAULT_PLAN_DAYS = 14
+// v2.4：上限值，AI 在 5-N 间自决（详见 plan.service.generatePlan）
+const DEFAULT_PLAN_DAYS = 21
 
 /**
  * 自愈：修复「vault 已 done 但没有对应 plan」的数据不一致。
@@ -321,6 +326,106 @@ plan.post("/:id/regenerate", async (c) => {
   })
 
   return c.json({ plan: updated })
+})
+
+/**
+ * POST /api/plan/:id/advice — v2.3+ 计划合理性对话式校准
+ *
+ * body: {
+ *   question: string                       // 用户的元问题
+ *   history?: Array<{ role, content }>      // 已有对话历史（可选，让追问能延续）
+ * }
+ *
+ * resp: AdviceResult = { answer, action }
+ *
+ * 行为：
+ *   1. 校验 plan + vault 归属
+ *   2. 取 vault.textContent 前 6000 字作为原文摘要
+ *   3. 把 planData.days 序列化成 AI 友好格式
+ *   4. 调 generatePlanAdvice 拿到 { answer, action }
+ *   5. 返回给前端（前端按 action.type 渲染"应用"按钮）
+ *
+ * 前端"一键应用"会直接调 /api/plan/:id/regenerate（已有路由），
+ * 把 action.targetDays 之外的天传给 pinnedDays，只重生 AI 建议改的天。
+ */
+plan.post("/:id/advice", async (c) => {
+  const user = c.get("user")
+  const id = c.req.param("id")
+
+  const body = await c.req.json().catch(() => null)
+  const question = body?.question
+  if (typeof question !== "string" || !question.trim()) {
+    return c.json({ error: "缺少 question 字段" }, 400)
+  }
+  if (question.length > 500) {
+    return c.json({ error: "问题过长（限 500 字以内）" }, 400)
+  }
+
+  const history = Array.isArray(body?.history)
+    ? (body.history as unknown[])
+        .filter(
+          (m): m is { role: "user" | "assistant"; content: string } =>
+            typeof m === "object" &&
+            m !== null &&
+            (("role" in m && ((m as { role: unknown }).role === "user" || (m as { role: unknown }).role === "assistant"))) &&
+            "content" in m &&
+            typeof (m as { content: unknown }).content === "string",
+        )
+        .slice(-6) // 最多保留最近 6 条，防 prompt 过长
+    : []
+
+  // 查 plan + 校验归属
+  const record = await prisma.studyPlan.findFirst({
+    where: { id, userId: user.userId },
+  })
+  if (!record) return c.json({ error: "学习计划不存在" }, 404)
+
+  // 查 vault 拿 textContent
+  const vault = await prisma.vault.findUnique({
+    where: { id: record.vaultId },
+    select: { textContent: true },
+  })
+  if (!vault?.textContent) {
+    return c.json(
+      { error: "资料文本不可用，无法生成建议" },
+      409,
+    )
+  }
+
+  // 序列化 plan
+  type OldPlanData = { title?: string; totalDays?: number; days?: PlanDay[] }
+  const oldPlanData = (record.planData ?? {}) as OldPlanData
+  const days = oldPlanData.days ?? []
+  const planSnapshot: PlanSnapshot = {
+    title: record.title,
+    totalDays: record.totalDays,
+    days: days.map((d) => ({
+      day: d.day,
+      topics: d.topics ?? [],
+      goals: d.goals ?? [],
+      sourcePages: d.sourcePages,
+    })),
+  }
+
+  // 调 AI
+  try {
+    const result = await generatePlanAdvice({
+      question: question.trim(),
+      textExcerpt: vault.textContent.slice(0, 6000),
+      plan: planSnapshot,
+      history,
+    })
+    return c.json(result)
+  } catch (e) {
+    console.error(`[plan.advice] AI 调用失败:`, e)
+    return c.json(
+      {
+        error: "AI 暂时无法回答，请稍后再试",
+        detail: e instanceof Error ? e.message.slice(0, 200) : "未知错误",
+      },
+      502,
+    )
+  }
 })
 
 export default plan

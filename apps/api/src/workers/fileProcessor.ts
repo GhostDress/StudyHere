@@ -8,7 +8,9 @@ import { parseFileWithPages } from "../services/parser.service"
 import { generatePlan, generateFlashcards, generateQuestions } from "../services/plan.service"
 import { buildChunksFromText, embedChunksForVault } from "../services/chunk.service"
 
-const DEFAULT_PLAN_DAYS = 14
+// v2.4：传给 generatePlan 的天数现在是"上限"，AI 在 5-N 间根据原文复杂度自决。
+// 上限设 21 而非 14，给系统教材一些空间；简单资料 AI 自己会缩到 5-10 天。
+const DEFAULT_PLAN_DAYS = 21
 const FLASHCARDS_PER_DAY = 10
 const QUESTIONS_PER_DAY = 5
 

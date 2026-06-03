@@ -25,6 +25,7 @@ import {
 import { planApi, vaultApi } from "@/lib/api"
 import type { StudyPlan, PlanDay, Vault } from "@/lib/types"
 import { usePdfDrawer } from "@/components/PdfDrawer"
+import PlanAdvisor from "@/components/PlanAdvisor"
 import {
   getPinnedDays,
   togglePinnedDay,
@@ -68,6 +69,8 @@ export default function PlanConfirmPage() {
   const [regenerating, setRegenerating] = useState(false)
   const [regenError, setRegenError] = useState<string | null>(null)
   const [regenNotice, setRegenNotice] = useState<string | null>(null)
+  // PlanAdvisor 应用 action 后 +1 触发 plan 重拉
+  const [refreshKey, setRefreshKey] = useState(0)
 
   // 加载 plan + vault（vault 为了拿 fileUrl 给 PdfDrawer 用）
   useEffect(() => {
@@ -95,7 +98,7 @@ export default function PlanConfirmPage() {
     return () => {
       cancelled = true
     }
-  }, [planId])
+  }, [planId, refreshKey])
 
   // plan 加载后初始化 pinnedDays + orderedDays
   useEffect(() => {
@@ -240,6 +243,14 @@ export default function PlanConfirmPage() {
             <span className="font-semibold tracking-tight">StudyHere</span>
           </div>
           <div className="flex items-center gap-3">
+            {/* v2.3+ 计划合理性 AI 校准：基于原文 + 当前计划 + 用户元问题三层上下文 */}
+            {plan && (
+              <PlanAdvisor
+                planId={plan.id}
+                totalDays={plan.totalDays}
+                onPlanUpdated={() => setRefreshKey((k) => k + 1)}
+              />
+            )}
             {vault?.fileUrl && (
               <button
                 onClick={() =>
@@ -271,13 +282,15 @@ export default function PlanConfirmPage() {
           </p>
         </div>
 
-        {/* 总览数据 */}
+        {/* 总览数据 —— 永远以真实 orderedDays 计算，避免和数据库 totalDays 字段脱钩 */}
         <div className="grid grid-cols-3 gap-3 md:gap-4 mb-10">
           <div className="rounded-xl border border-[#e9e9e8] bg-white p-4 md:p-5">
             <div className="flex items-center gap-2 text-[#9b9a97] text-[12px] mb-1">
               <Calendar className="size-3.5" /> 总天数
             </div>
-            <div className="text-2xl md:text-3xl font-bold">{plan.totalDays}</div>
+            <div className="text-2xl md:text-3xl font-bold">
+              {orderedDays.length}
+            </div>
             <div className="text-[12px] text-[#9b9a97] mt-1">天</div>
           </div>
           <div className="rounded-xl border border-[#e9e9e8] bg-white p-4 md:p-5">
@@ -292,7 +305,9 @@ export default function PlanConfirmPage() {
               <BookOpen className="size-3.5" /> 每日时长
             </div>
             <div className="text-2xl md:text-3xl font-bold">
-              {plan.totalDays > 0 ? Math.round(totalMinutes / plan.totalDays) : 0}
+              {orderedDays.length > 0
+                ? Math.round(totalMinutes / orderedDays.length)
+                : 0}
             </div>
             <div className="text-[12px] text-[#9b9a97] mt-1">分钟</div>
           </div>

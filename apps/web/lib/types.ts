@@ -247,3 +247,43 @@ export interface ChatMessage {
   /** 客户端时间戳，仅渲染用 */
   ts: number
 }
+
+// ---------- v2.3+ 计划合理性对话式校准（PlanAdvisor）----------
+// 第 8 个 AI 调用点：用户对 plan 本身的元问题（漏点 / 顺序 / 个性化）
+// AI 输出结构化 action，前端渲染"应用"按钮，一键调 regenerate
+
+export type PlanAction =
+  | {
+      type: "regenerate_days"
+      targetDays: number[]
+      hint: string
+      reason: string
+    }
+  | {
+      type: "reorder"
+      newOrder: number[]
+      reason: string
+    }
+  | {
+      type: "no_change"
+      reason: string
+    }
+  | {
+      type: "need_more_info"
+      question: string
+    }
+
+export interface PlanAdviceResponse {
+  answer: string
+  action: PlanAction
+}
+
+/** 前端 PlanAdvisor 聊天消息（含 action 用于渲染"应用"按钮）*/
+export interface PlanAdviceMessage {
+  role: "user" | "assistant"
+  content: string
+  action?: PlanAction
+  ts: number
+  /** 应用 action 后的状态，控制按钮 disabled */
+  appliedAt?: number
+}

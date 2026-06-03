@@ -25,6 +25,8 @@ import type {
   Vault,
   VaultStatus,
   ChatAnswerResponse,
+  PlanAdviceResponse,
+  PlanAction,
 } from "./types"
 import {
   mockUser,
@@ -481,6 +483,66 @@ export const planApi = {
       }
       throw e
     }
+  },
+
+  /**
+   * v2.3+ 第 8 个 AI 调用点：计划合理性对话式校准
+   *
+   * AI 拿 [原文摘要 + 当前 plan + 用户问题] 三层上下文，
+   * 输出 { answer, action }，前端按 action.type 渲染"应用"按钮，
+   * 用户点应用 → 调 regenerate，仅重生 action.targetDays 之外的天钉住。
+   */
+  async advice(
+    planId: string,
+    payload: {
+      question: string
+      history?: Array<{ role: "user" | "assistant"; content: string }>
+    },
+  ): Promise<PlanAdviceResponse> {
+    if (USE_MOCK) {
+      await delay(900)
+      // mock：根据问题关键字假装智能
+      const q = payload.question
+      let action: PlanAction
+      if (/漏|missing|缺|没/.test(q)) {
+        action = {
+          type: "regenerate_days",
+          targetDays: [3, 5],
+          hint: "用户认为原计划漏了核心概念，建议补充",
+          reason: "Day 3 和 Day 5 之间缺少对核心概念的串联",
+        }
+      } else if (/顺序|order|颠倒|前后|换/.test(q)) {
+        action = {
+          type: "reorder",
+          newOrder: [1, 2, 3, 5, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+          reason: "Day 5 是 Day 4 的前置基础，建议提前",
+        }
+      } else if (/基础|跳过|skip|进阶/.test(q)) {
+        action = {
+          type: "regenerate_days",
+          targetDays: [1, 2],
+          hint: "用户有基础，建议把 Day 1-2 改成进阶内容或合并",
+          reason: "根据用户背景调整开头难度",
+        }
+      } else {
+        action = { type: "no_change", reason: "AI 认为当前计划合理，不必修改" }
+      }
+      return {
+        answer:
+          "（mock 答案）你说的有道理。我看了一下原文，" +
+          (action.type === "no_change"
+            ? "目前计划已经覆盖了原文核心内容，不用大改。"
+            : action.type === "regenerate_days"
+              ? `建议重生 Day ${(action as { targetDays: number[] }).targetDays.join(", ")}。${action.reason}`
+              : "建议调整顺序，让前置概念先学。"),
+        action,
+      }
+    }
+    const res = await http.post<PlanAdviceResponse>(
+      `/api/plan/${planId}/advice`,
+      payload,
+    )
+    return res.data
   },
 }
 

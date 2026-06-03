@@ -187,7 +187,7 @@ function injectPageMarkers(text: string, pageMap?: PageMap): string {
  * 根据文本内容生成 N 天学习计划
  *
  * @param textContent  parseFile 提取的纯文本
- * @param totalDays    计划天数（默认 14）
+ * @param totalDays    天数上限（AI 会根据原文复杂度在 5..totalDays 之间自决最合理天数）
  */
 export interface GeneratePlanOptions {
   /** 页码映射 —— 注入 [P{N}] marker 让 AI 输出 sourcePages 时引用真实页码 */
@@ -213,20 +213,36 @@ export async function generatePlan(
   const excerpt = truncateText(textWithPages, 8000)
   const hasPages = !!opts.pageMap && opts.pageMap.pages.length > 0
 
-  const taskPrompt = `你是一名专业的学习规划师。用户会给你一份学习材料的文字内容，你需要为用户制定一份系统的 ${totalDays} 天学习计划。
+  // v2.4：天数从"硬要求 N 天"改成"5..N 之间根据原文复杂度自决"。
+  // 简单资料（10 页内的概念说明）不应该硬撑 14 天；
+  // 复杂资料（80 页技术书）也不该被压缩到 14 天。
+  // 让 AI 按内容真实复杂度评估，写进简历能讲："基于原文章节数 / 知识密度 /
+  // 概念依赖深度三维拟合学习周期，避免硬编码导致的学习体验失真"。
+  const minDays = Math.max(5, Math.min(7, Math.floor(totalDays / 2)))
+  const taskPrompt = `你是一名专业的学习规划师。用户给你一份学习材料，你需要拟合一份**合理天数**的学习计划。
+
+【天数自决规则 —— 重要】
+- 天数上限：${totalDays} 天
+- 天数下限：${minDays} 天
+- 你必须根据原文**真实复杂度**在 ${minDays}-${totalDays} 之间选择最合理的天数，不要为凑数硬撑或硬压
+- 判断依据：① 章节/小节数量 ② 核心概念数量 ③ 概念之间的依赖深度 ④ 总字数粗略对应的阅读时长
+- 例子：
+  · 10 页基础概念说明 → 5-7 天合理
+  · 30-50 页带练习的教程 → 9-12 天合理
+  · 80+ 页系统教材 → 接近上限 ${totalDays} 天
 
 ${
   hasPages
-    ? `**重要**：文本中夹杂了 \`[P1]\` \`[P2]\` 等页码 marker，表示原文的页边界。
-你输出每一天时，**必须**根据 topics 来自原文的哪些页给出 sourcePages（页码数组）。
+    ? `**页码 marker**：文本中夹杂 \`[P1]\` \`[P2]\` 表示原文页边界。
+每一天必须根据 topics 来源给出 sourcePages（页码数组）。
 `
     : ""
 }
 
-输出严格为 JSON，格式如下：
+输出严格为 JSON：
 {
   "title": "计划标题（简洁，含材料名称）",
-  "totalDays": ${totalDays},
+  "totalDays": <你自决的天数，必须等于 days.length>,
   "days": [
     {
       "day": 1,
@@ -243,7 +259,12 @@ ${
 
 要求：
 - 覆盖材料全部核心知识点，循序渐进
-- 每天 topics 1-3 个，goals 1-3 条，estimatedMinutes 30-120
+- 每天 topics 1-3 个，goals 1-3 条
+- **estimatedMinutes 必须根据当天 topics 的实际复杂度给出合理估算**：
+  · 概念入门 / 基础回顾 / 简单复习类：30-45 分钟
+  · 核心方法 / 案例对照类：45-75 分钟
+  · 深入综合 / 多概念串联 / 实操类：75-120 分钟
+  · **不要全部 60 分钟懒省事**，让总时长真实反映学习投入
 - date 从 ${today} 开始，每天递增一天
 ${
   hasPages

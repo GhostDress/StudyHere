@@ -143,7 +143,7 @@ export default function AgentSettingsPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-10 md:py-14">
+      <main className="mx-auto max-w-5xl px-6 py-10 md:py-14 pb-32">
         {/* 标题区 */}
         <div className="mb-10 md:mb-14">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
@@ -217,9 +217,22 @@ export default function AgentSettingsPage() {
           })}
         </div>
 
-        {/* 底部确认栏 */}
-        <div className="mt-10 md:mt-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="text-sm text-[#9b9a97]">
+        {/* 底部说明（移到按钮之前，避免被 sticky 栏挡住）*/}
+        <div className="mt-12 text-xs text-[#9b9a97] border-t border-[#e9e9e8] pt-6">
+          💡 为什么强制选择？每种风格的 AI Prompt 工程不同，闪卡、题目、讲解都会按对应风格生成。先选一种开始学习，
+          之后在学习计划页可以随时切换 —— 每种风格的进度独立保存，互不干扰，方便你对比哪种最适合自己。
+        </div>
+      </main>
+
+      {/* sticky 底部确认栏：无论怎么滚动，「确认并开始学习」始终可见 */}
+      <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-[#e9e9e8] z-30">
+        {error && (
+          <div className="mx-auto max-w-5xl px-6 py-2 text-[12px] text-[#c4332e] bg-[#fdf3f3]">
+            {error}
+          </div>
+        )}
+        <div className="mx-auto max-w-5xl px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="text-[13px] text-[#9b9a97]">
             {selected ? (
               <>
                 你选择的风格：
@@ -237,7 +250,7 @@ export default function AgentSettingsPage() {
             disabled={!selected || submitting}
             onClick={handleConfirm}
             className={[
-              "inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all",
+              "inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto justify-center",
               selected && !submitting
                 ? "bg-[#37352f] text-white hover:bg-black"
                 : "bg-[#e9e9e8] text-[#9b9a97] cursor-not-allowed",
@@ -247,19 +260,7 @@ export default function AgentSettingsPage() {
             <ArrowRight className="size-4" />
           </button>
         </div>
-
-        {error && (
-          <div className="mt-4 text-sm text-[#c4332e] bg-[#fbeae9] px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {/* 底部说明 */}
-        <div className="mt-12 text-xs text-[#9b9a97] border-t border-[#e9e9e8] pt-6">
-          💡 为什么强制选择？每种风格的 AI Prompt 工程不同，闪卡、题目、讲解都会按对应风格生成。先选一种开始学习，
-          之后在学习计划页可以随时切换 —— 每种风格的进度独立保存，互不干扰，方便你对比哪种最适合自己。
-        </div>
-      </main>
+      </div>
     </div>
   )
 }
