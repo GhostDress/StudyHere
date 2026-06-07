@@ -27,6 +27,21 @@ export default function FlashcardPage() {
   const [finished, setFinished] = useState(false)
   const [vaultId, setVaultId] = useState<string>("")
   const [refreshKey, setRefreshKey] = useState(0)
+  // v2.5++：reactive 激活人格 —— PersonalitySwitcher 切换时通过 vault-personality-change
+  //   事件触发组件重渲染（不然 localStorage 变了 React 不知道，闪卡不会跟着切版式）
+  const [activePersonality, setActivePersonalityState] = useState<AgentPersonality>("student")
+  useEffect(() => {
+    if (typeof window === "undefined" || !vaultId) return
+    setActivePersonalityState(getActivePersonality(vaultId) || "student")
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<{ vaultId: string; personality: AgentPersonality }>
+      if (ce.detail?.vaultId === vaultId) {
+        setActivePersonalityState(ce.detail.personality)
+      }
+    }
+    window.addEventListener("vault-personality-change", handler)
+    return () => window.removeEventListener("vault-personality-change", handler)
+  }, [vaultId])
   // v2.2.1：本次会话每张卡的评估记录，用于完成页统计 + 待复习列表
   const [sessionRecords, setSessionRecords] = useState<
     Array<{ cardId: string; front: string; level: number }>
@@ -386,7 +401,7 @@ export default function FlashcardPage() {
                   card={card.card}
                   dayIndex={card.dayIndex}
                   vaultId={vaultId}
-                  personality={getActivePersonality(vaultId) || "student"}
+                  personality={activePersonality}
                   flashcardId={card.id}
                 />
               ) : (

@@ -15,17 +15,90 @@ import {
   ChevronDown,
 } from "lucide-react"
 import type { FlashcardCard } from "@/lib/mockContentEngine"
-import type { AgentPersonality } from "@/lib/types"
+import {
+  isMultiPersonalityCard,
+  type AgentPersonality,
+  type MultiPersonalityCardData,
+} from "@/lib/types"
 import FeedbackButton from "@/components/FeedbackButton"
 
 interface Props {
-  card: FlashcardCard
+  /**
+   * 卡片数据 · 两种形态：
+   *   - 旧 mock：FlashcardCard（一张卡只对应一个人格）
+   *   - v2.5++ 真后端：MultiPersonalityCardData（一张卡含 4 人格字段）
+   * v2.5++ 形态会在组件入口按 personality prop 拍平成 FlashcardCard。
+   */
+  card: FlashcardCard | MultiPersonalityCardData
   /** 用于来源溯源展示 */
   dayIndex?: number
   /** v2.3：报错按钮所需 */
   vaultId?: string
+  /**
+   * 当前激活人格。
+   * - mock 形态：仅传给反馈按钮做溯源
+   * - multi 形态：用此选 byPersonality[active] 字段渲染（切人格 → 立即重渲染）
+   */
   personality?: AgentPersonality
   flashcardId?: string
+}
+
+/** v2.5++：把 MultiPersonalityCardData 按 active personality 拍平成 FlashcardCard */
+function flattenMultiCard(
+  multi: MultiPersonalityCardData,
+  active: AgentPersonality,
+): FlashcardCard {
+  const p = multi.byPersonality[active]
+  const theory = multi.theoryByPersonality[active]
+  const def = multi.baseQa.definition
+  const base = {
+    personality: active,
+    question: p.question,
+    theory,
+  }
+  switch (active) {
+    case "student": {
+      const s = p as MultiPersonalityCardData["byPersonality"]["student"]
+      return {
+        ...base,
+        answer: { definition: def, example: s.example, hint: s.hint },
+      }
+    }
+    case "cert": {
+      const s = p as MultiPersonalityCardData["byPersonality"]["cert"]
+      return {
+        ...base,
+        answer: {
+          definition: def,
+          examFrequency: s.examFrequency,
+          examTrap: s.examTrap,
+          mnemonic: s.mnemonic,
+        },
+      }
+    }
+    case "explorer": {
+      const s = p as MultiPersonalityCardData["byPersonality"]["explorer"]
+      return {
+        ...base,
+        answer: {
+          definition: def,
+          crossDomain: s.crossDomain,
+          counterfactual: s.counterfactual,
+        },
+      }
+    }
+    case "strict": {
+      const s = p as MultiPersonalityCardData["byPersonality"]["strict"]
+      return {
+        ...base,
+        answer: {
+          definition: def,
+          socraticQuestions: s.socraticQuestions,
+          socraticDialogues: s.socraticDialogues,
+        },
+      }
+    }
+  }
 }
 
 /**
@@ -42,15 +115,21 @@ interface Props {
 const CREDIBILITY_GUIDE_KEY = "studyhere_credibility_guide_seen"
 
 export default function FlashcardAnswerCard({
-  card,
+  card: rawCard,
   dayIndex,
   vaultId,
   personality,
   flashcardId,
 }: Props) {
+  // v2.5++：multi 形态按当前 active personality 实时拍平 → 切人格立刻看到不同版式
+  //   active 取 prop personality（页面层每次传当前的 getActivePersonality(vaultId)）
+  //   active 缺省回退 student
+  const activePersonality: AgentPersonality = personality ?? "student"
+  const card: FlashcardCard = isMultiPersonalityCard(rawCard)
+    ? flattenMultiCard(rawCard, activePersonality)
+    : rawCard
   const { answer, theory, credibility } = card
-  // v2.5 兜底：老数据 card.personality 可能为空（v2.4 之前的 plan 生成时没存人格）。
-  // 优先用卡片快照（保留"生成时的人格"语义），缺失则回退到当前 vault active personality。
+  // 老 mock 形态：用 card.personality；multi 形态拍平后 card.personality = activePersonality
   const cardPersonality = card.personality ?? personality ?? "student"
   // v2.2.1：可信度区默认折叠
   const [showCredibility, setShowCredibility] = useState(false)

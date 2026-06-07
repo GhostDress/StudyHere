@@ -134,8 +134,57 @@ export interface Flashcard {
   dayIndex: number
   mastery: number
   createdAt: string
-  // v2.2.1：结构化卡片数据（含人格 + 学习理论），前端按 personality 渲染
-  card?: import("./mockContentEngine").FlashcardCard
+  /**
+   * v2.5++：multi-personality cardData
+   * 一张卡同时存 4 套人格字段，前端按当前激活人格选 byPersonality[active] 渲染。
+   * 老数据这里是 mock 的 FlashcardCard，用 type guard 区分。
+   */
+  card?:
+    | import("./mockContentEngine").FlashcardCard
+    | MultiPersonalityCardData
+}
+
+/** v2.5++：一张卡同时存 4 套人格字段 */
+export interface MultiPersonalityCardData {
+  baseQa: {
+    keyword: string
+    definition: string
+  }
+  theoryByPersonality: Record<
+    AgentPersonality,
+    { name: string; shortDesc: string; citation: string }
+  >
+  byPersonality: {
+    student: { question: string; example: string; hint: string }
+    cert: {
+      question: string
+      examFrequency: "high" | "mid" | "low"
+      examTrap: string
+      mnemonic: string
+    }
+    explorer: {
+      question: string
+      crossDomain: string
+      counterfactual: string
+    }
+    strict: {
+      question: string
+      socraticQuestions: string[]
+      socraticDialogues: Array<{ bubbles: string[] }>
+    }
+  }
+}
+
+/** 区分 multi vs mock 的 type guard */
+export function isMultiPersonalityCard(
+  card: unknown,
+): card is MultiPersonalityCardData {
+  return (
+    !!card &&
+    typeof card === "object" &&
+    "baseQa" in card &&
+    "byPersonality" in card
+  )
 }
 
 export interface FlashcardListResponse {

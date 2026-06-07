@@ -36,38 +36,59 @@ export interface StudyPlanResult {
 }
 
 export interface FlashcardResult {
-  front: string         // 问题面
-  back: string          // 答案面（裸文本，向后兼容 + 老前端 fallback）
-  // v2.5+：4 人格结构化卡片数据（FlashcardCard JSON）
-  // 形态跟前端 mockContentEngine 的 FlashcardCard 对齐。
-  // null 时前端 fallback 走 back 字段。
+  front: string         // 问题面（兜底；跟 byPersonality[active].question 大致一致）
+  back: string          // 答案面（裸文本兜底，老前端 fallback）
+  // v2.5++：4 人格"原料 + 各自字段"全部一次生成，前端按当前激活人格实时切版式
+  // null 时前端 fallback 走 back 字段
   cardData?: FlashcardCardData | null
 }
 
-/** FlashcardCard 结构（跟前端 mockContentEngine 的 FlashcardCard 对齐） */
+/**
+ * v2.5++ · 多人格闪卡数据结构
+ *
+ * 设计哲学："一张卡 = 一个知识点 × 4 套人格视角"
+ * 不是为每个人格单独生成 4 张卡（用户切人格看不到对应版本），
+ * 而是一张卡同时存 4 套人格的差异化字段，前端按 active personality
+ * 选哪几个字段渲染。这跟 mockContentEngine 的设计哲学一致。
+ *
+ * Token 代价：单卡 prompt 4x 大，但避免重复生成 4 套独立卡片。
+ */
 export interface FlashcardCardData {
-  personality: "student" | "cert" | "explorer" | "strict"
-  question: string
-  answer: {
-    definition: string
-    // 学生党
-    example?: string
-    hint?: string
-    // 考证型
-    examFrequency?: "high" | "mid" | "low"
-    examTrap?: string
-    mnemonic?: string
-    // 兴趣探索
-    crossDomain?: string
-    counterfactual?: string
-    // 严苛教练
-    socraticQuestions?: string[]
-    socraticDialogues?: Array<{ bubbles: string[] }>
+  /** 共享原料（所有人格都用） */
+  baseQa: {
+    keyword: string       // 核心关键词，如 "RAG"、"幻觉"
+    definition: string    // 精准定义（1-2 句）
   }
-  theory: {
-    name: string
-    shortDesc: string
-    citation: string
+  /** 学习理论锚定（跟当前 vault active personality 对应） */
+  theoryByPersonality: {
+    student: { name: string; shortDesc: string; citation: string }
+    cert: { name: string; shortDesc: string; citation: string }
+    explorer: { name: string; shortDesc: string; citation: string }
+    strict: { name: string; shortDesc: string; citation: string }
+  }
+  /** 4 人格各自的差异化字段 */
+  byPersonality: {
+    student: {
+      question: string
+      example: string
+      hint: string
+    }
+    cert: {
+      question: string
+      examFrequency: "high" | "mid" | "low"
+      examTrap: string
+      mnemonic: string
+    }
+    explorer: {
+      question: string
+      crossDomain: string
+      counterfactual: string
+    }
+    strict: {
+      question: string
+      socraticQuestions: string[]
+      socraticDialogues: Array<{ bubbles: string[] }>
+    }
   }
 }
 
@@ -348,119 +369,101 @@ ${
  * @param count       生成数量（默认 10）
  */
 /**
- * 4 人格各自的"结构化卡片"输出 schema 描述
- * 关键设计：AI 不只是用不同口吻回答同一个问题，而是按人格输出 4 种**不同的卡片结构**：
- *   学生党 → example + hint（耐心举例 + 易混点提示）
- *   考证型 → examFrequency + examTrap + mnemonic（频次 + 陷阱 + 口诀）
- *   兴趣探索 → crossDomain + counterfactual（跨界类比 + 反事实追问）
- *   严苛教练 → socraticDialogues（3 个递进反问 + 对话气泡式参考方向）
- * 前端 FlashcardAnswerCard 按 personality 渲染对应字段，UI 上呈现 4 种完全不同的版式。
+ * v2.5++ 多人格闪卡 prompt
+ *
+ * 关键设计：一张卡 = 1 个知识点 × 4 套人格视角字段同时生成。
+ *   学生党字段 → example（举例）+ hint（易混点提示）
+ *   考证型字段 → examFrequency + examTrap + mnemonic
+ *   兴趣探索字段 → crossDomain + counterfactual
+ *   严苛教练字段 → socraticQuestions + socraticDialogues
+ *
+ * 这样前端就能根据用户当前激活的人格，从同一张卡里选对应字段渲染，
+ * 用户切人格按钮 → 闪卡立即切版式（贴近 mock 体验）。
  */
-const PERSONALITY_CARD_SCHEMAS: Record<string, string> = {
-  student: `cardData 结构：
+const MULTI_PERSONALITY_CARD_SCHEMA = `cardData 结构（一张卡同时包含 4 人格字段）：
 {
-  "personality": "student",
-  "question": "想象你在跟同学解释：什么是「<核心概念>」？",
-  "answer": {
-    "definition": "精准定义，1-2 句",
-    "example": "至少 2 句的真实生活/工作场景举例，要具体，不要抽象比喻",
-    "hint": "易混点提示，告诉用户最容易跟什么概念搞混 + 怎么区分"
+  "baseQa": {
+    "keyword": "本卡核心关键词（短，3-8 字）",
+    "definition": "精准定义（1-2 句，所有人格共享）"
   },
-  "theory": { "name": "认知负荷理论", "shortDesc": "渐进披露，分块呈现，控制工作记忆负荷", "citation": "Sweller, 1988" }
-}`,
-  cert: `cardData 结构：
-{
-  "personality": "cert",
-  "question": "【高频/中频/低频考点】「<核心概念>」的标准定义？",
-  "answer": {
-    "definition": "考试官方标准定义，精准措辞",
-    "examFrequency": "high" 或 "mid" 或 "low",
-    "examTrap": "命题陷阱：考官最容易用什么相似概念做干扰项，2-3 句",
-    "mnemonic": "记忆口诀：用一个朗朗上口的短句/缩写帮助记忆"
+  "theoryByPersonality": {
+    "student": { "name": "认知负荷理论", "shortDesc": "渐进披露，分块呈现，控制工作记忆负荷", "citation": "Sweller, 1988" },
+    "cert":    { "name": "检索练习", "shortDesc": "主动提取比被动复读记得更牢", "citation": "Roediger & Karpicke, 2006" },
+    "explorer":{ "name": "远距离迁移", "shortDesc": "跨域类比促进深度理解和远迁移", "citation": "Gick & Holyoak, 1980" },
+    "strict":  { "name": "生成效应 + 苏格拉底式", "shortDesc": "主动生成答案 + 反问引导，深度内化", "citation": "Slamecka & Graf, 1978" }
   },
-  "theory": { "name": "检索练习", "shortDesc": "主动提取比被动复读记得更牢", "citation": "Roediger & Karpicke, 2006" }
-}`,
-  explorer: `cardData 结构：
-{
-  "personality": "explorer",
-  "question": "「<核心概念>」可以跟哪个其他领域的概念类比？为什么？",
-  "answer": {
-    "definition": "定义本身保留",
-    "crossDomain": "跨学科类比：把这个概念跟一个完全不同领域（生物/物理/历史/艺术等）的概念关联起来，2-3 句",
-    "counterfactual": "反事实追问：如果这个概念在某个极端场景不成立会怎样？这条边界比定义本身更值得思考"
-  },
-  "theory": { "name": "远距离迁移", "shortDesc": "跨域类比促进深度理解和远迁移", "citation": "Gick & Holyoak, 1980" }
-}`,
-  strict: `cardData 结构：
-{
-  "personality": "strict",
-  "question": "用你自己的话，30 秒内解释「<核心概念>」。先在心里答完，再翻面对照。",
-  "answer": {
-    "definition": "标准定义先放着对照",
-    "socraticQuestions": [
-      "第一个反问：从反例角度问",
-      "第二个反问：从边界条件问",
-      "第三个反问：从易混淆概念问"
-    ],
-    "socraticDialogues": [
-      { "bubbles": ["对每个反问的引导对话第 1 句（教练人设，简短直接）", "第 2 句（提示思路）", "第 3 句（最后给一个具体策略）"] },
-      { "bubbles": ["对第二个反问的引导对话 3 句", "...", "..."] },
-      { "bubbles": ["对第三个反问的引导对话 3 句", "...", "..."] }
-    ]
-  },
-  "theory": { "name": "生成效应 + 苏格拉底式", "shortDesc": "主动生成答案 + 反问引导，深度内化", "citation": "Slamecka & Graf, 1978" }
-}`,
-}
+  "byPersonality": {
+    "student": {
+      "question": "想象你在跟同学解释：什么是「<keyword>」？",
+      "example": "至少 2 句的真实生活/工作场景举例，要具体，不要抽象比喻",
+      "hint": "易混点提示：告诉用户最容易跟什么概念搞混 + 怎么区分"
+    },
+    "cert": {
+      "question": "【高频/中频/低频考点】「<keyword>」的标准定义？",
+      "examFrequency": "high",
+      "examTrap": "命题陷阱：考官最容易用什么相似概念做干扰项，2-3 句",
+      "mnemonic": "记忆口诀：用一个朗朗上口的短句/缩写帮助记忆"
+    },
+    "explorer": {
+      "question": "「<keyword>」可以跟哪个其他领域的概念类比？为什么？",
+      "crossDomain": "跨学科类比：把这个概念跟一个完全不同领域（生物/物理/历史/艺术等）的概念关联起来，2-3 句",
+      "counterfactual": "反事实追问：如果这个概念在某个极端场景不成立会怎样？这条边界比定义本身更值得思考"
+    },
+    "strict": {
+      "question": "用你自己的话，30 秒内解释「<keyword>」。先在心里答完，再翻面对照。",
+      "socraticQuestions": [
+        "第一个反问：从反例角度问",
+        "第二个反问：从边界条件问",
+        "第三个反问：从易混淆概念问"
+      ],
+      "socraticDialogues": [
+        { "bubbles": ["对每个反问的引导对话第 1 句（教练人设，简短直接）", "第 2 句（提示思路）", "第 3 句（最后给一个具体策略）"] },
+        { "bubbles": ["对第二个反问的引导对话 3 句", "...", "..."] },
+        { "bubbles": ["对第三个反问的引导对话 3 句", "...", "..."] }
+      ]
+    }
+  }
+}`
 
 export async function generateFlashcards(
   dayContent: string,
   count: number,
   personality?: string | null,
 ): Promise<FlashcardResult[]> {
-  // 兜底人格（不在 4 选 1 内时回退 student）
-  const safePersonality =
-    personality === "student" ||
-    personality === "cert" ||
-    personality === "explorer" ||
-    personality === "strict"
-      ? personality
-      : "student"
-
-  const cardSchema = PERSONALITY_CARD_SCHEMAS[safePersonality]
-
+  // personality 入参留作"人格前缀语气"参考，但 cardData 里 4 人格字段都要生成
   const taskPrompt = `你是一名教育专家，擅长制作 4 人格差异化的学习闪卡。
 根据给定的学习内容，生成 ${count} 张高质量的记忆闪卡。
 
-当前人格：${safePersonality}
-
 【绝对规则】
-1. 每张卡的 cardData 必须严格按下面的 schema 输出（人格不同字段不同！）
-2. front 是简洁问题（一句话），back 是答案的裸文本概括（兜底用，2-3 句）
-3. cardData 是结构化卡片对象，前端按 personality 渲染对应版式
-4. 不要在 cardData 字段名上做任何创新——schema 里写什么字段就用什么字段
-5. 当前人格 = ${safePersonality}，所以 cardData.personality 必须填 "${safePersonality}"
+1. 每张卡 cardData 必须同时包含 4 人格（student / cert / explorer / strict）
+   各自的差异化字段——这是为了用户切人格按钮能立刻看到不同版式
+2. baseQa.keyword 是本卡核心关键词，所有人格的 question 都要包它
+3. baseQa.definition 是所有人格共享的精准定义
+4. 不要为了凑字数填废话；4 人格字段都要真有差异，不能 4 套填一样
+5. front 是兜底问题（用 baseQa.keyword 提问），back 是兜底答案文本（用 definition）
 
-${cardSchema}
+${MULTI_PERSONALITY_CARD_SCHEMA}
 
 输出严格为 JSON：
 {
   "flashcards": [
     {
-      "front": "问题面（简洁，一句话）",
-      "back": "答案兜底文本（2-3 句，不带 markdown）",
-      "cardData": { 上面 schema 描述的对象 }
+      "front": "问题面（兜底用，简洁，一句话）",
+      "back": "答案兜底文本（用 definition，2-3 句，不带 markdown）",
+      "cardData": { 上面 schema 描述的对象，4 人格字段都填 }
     }
   ]
 }
 
 要求：
 - 涵盖今日学习主题的关键概念、定义、公式、方法
-- 每张卡的 cardData.personality 都必须是 "${safePersonality}"
-- 严格按人格 schema 填字段，不要漏、不要乱加
+- 4 人格字段必须真有差异：学生党要真举例子，考证型要真有口诀，兴趣探索要真跨学科，严苛教练要真反问
 - 只输出 JSON，不要任何额外文字、不要 markdown 包裹`
 
   const userPrompt = `今日学习内容：${dayContent}`
 
+  // personality 仍传给 composeSystemPrompt，让人格前缀影响整体生成语气
+  // 但 cardData 4 人格字段都要填，不依赖这个 personality
   const systemPrompt = composeSystemPrompt(personality, taskPrompt)
   const result = await callAIJSON<{ flashcards: FlashcardResult[] }>(systemPrompt, userPrompt)
 
@@ -469,18 +472,26 @@ ${cardSchema}
   }
 
   // 字段净化 + 防 AI 偷懒不输出 cardData
+  // 关键校验：byPersonality 4 人格字段必须都在
   const cleaned = result.flashcards
     .slice(0, count)
-    .map<FlashcardResult>((f) => ({
-      front: typeof f.front === "string" ? f.front : "",
-      back: typeof f.back === "string" ? f.back : "",
-      cardData:
-        f.cardData &&
-        typeof f.cardData === "object" &&
-        typeof (f.cardData as FlashcardCardData).answer === "object"
-          ? (f.cardData as FlashcardCardData)
-          : null,
-    }))
+    .map<FlashcardResult>((f) => {
+      const cd = f.cardData as FlashcardCardData | undefined
+      const valid =
+        cd &&
+        typeof cd === "object" &&
+        typeof cd.baseQa === "object" &&
+        typeof cd.byPersonality === "object" &&
+        cd.byPersonality?.student &&
+        cd.byPersonality?.cert &&
+        cd.byPersonality?.explorer &&
+        cd.byPersonality?.strict
+      return {
+        front: typeof f.front === "string" ? f.front : "",
+        back: typeof f.back === "string" ? f.back : "",
+        cardData: valid ? cd : null,
+      }
+    })
 
   return cleaned
 }
