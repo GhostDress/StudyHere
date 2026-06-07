@@ -391,9 +391,10 @@ plan.post("/:id/advice", async (c) => {
   if (!record) return c.json({ error: "学习计划不存在" }, 404)
 
   // 查 vault 拿 textContent
+  // v2.5：把 agentPersonality 一并取出，让 advice 追问语气也跟人格走
   const vault = await prisma.vault.findUnique({
     where: { id: record.vaultId },
-    select: { textContent: true },
+    select: { textContent: true, agentPersonality: true },
   })
   if (!vault?.textContent) {
     return c.json(
@@ -424,6 +425,7 @@ plan.post("/:id/advice", async (c) => {
       textExcerpt: vault.textContent.slice(0, 6000),
       plan: planSnapshot,
       history,
+      personality: vault.agentPersonality,
     })
     return c.json(result)
   } catch (e) {

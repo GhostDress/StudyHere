@@ -16,6 +16,7 @@
 import { prisma } from "../lib/prisma"
 import { embedText, vecToPg } from "../lib/embedding"
 import { aiClient, AI_MODEL } from "../lib/ai"
+import { composeSystemPrompt } from "../prompts/personalities"
 
 // ============ 类型 ============
 
@@ -113,6 +114,9 @@ export async function retrieveChunks(
 export async function ragAnswer(
   vaultId: string,
   question: string,
+  // v2.5：注入 vault 当前激活人格，让 RAG 追问的语气也跟着 4 套教育学理论走
+  // （之前 RAG/chat 完全没传人格，所有追问口吻都一致）
+  personality?: string | null,
 ): Promise<RagAnswer> {
   // 1. 检索
   const allChunks = await retrieveChunks(vaultId, question, TOPK)
@@ -133,7 +137,7 @@ export async function ragAnswer(
   const usedChunks = trimToMaxChars(relevant, MAX_CONTEXT_CHARS)
 
   // 5. 喂 AI
-  const answer = await callAi(question, usedChunks)
+  const answer = await callAi(question, usedChunks, personality)
 
   return {
     answer,
@@ -153,7 +157,11 @@ const SYSTEM_PROMPT = `你是一个严格基于"用户上传资料"作答的学�
 4. 用简洁中文回答，不要寒暄、不要"根据您提供的资料……"这种废话
 5. 引用原文时用「」括起来，让用户能直接核对`
 
-async function callAi(question: string, context: RetrievedChunk[]): Promise<string> {
+async function callAi(
+  question: string,
+  context: RetrievedChunk[],
+  personality?: string | null,
+): Promise<string> {
   const contextStr = context
     .map(
       (c, i) =>
@@ -165,10 +173,14 @@ async function callAi(question: string, context: RetrievedChunk[]): Promise<stri
 
   const userPrompt = `用户问题：${question}\n\n${contextStr}`
 
+  // v2.5：把 personality 前缀 prompt 拼在严格基于原文 SYSTEM_PROMPT 之前。
+  //   语气走人格 / 严格性走 SYSTEM_PROMPT —— 两者互不冲突。
+  const systemPrompt = composeSystemPrompt(personality, SYSTEM_PROMPT)
+
   const completion = await aiClient.chat.completions.create({
     model: AI_MODEL,
     messages: [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
     temperature: 0.2, // 低温度 = 别瞎发挥

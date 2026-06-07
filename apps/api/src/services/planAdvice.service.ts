@@ -19,6 +19,7 @@
 // ============================================================
 
 import { chatJSON } from "../lib/ai"
+import { composeSystemPrompt } from "../prompts/personalities"
 
 // ---- 三层上下文输入 ----
 
@@ -41,6 +42,8 @@ export interface AdviceInput {
   plan: PlanSnapshot
   /** 已展开的对话历史（可空），让追问能延续 */
   history?: Array<{ role: "user" | "assistant"; content: string }>
+  /** v2.5：vault 当前激活人格。让 advice 追问语气也跟 4 套教育学理论走 */
+  personality?: string | null
 }
 
 // ---- 结构化 action 输出 ----
@@ -109,7 +112,7 @@ const SYSTEM_PROMPT = `你是一名 AI 学习计划校准师。用户给你 3 �
 // ---- 主入口 ----
 
 export async function generatePlanAdvice(input: AdviceInput): Promise<AdviceResult> {
-  const { question, textExcerpt, plan, history = [] } = input
+  const { question, textExcerpt, plan, history = [], personality } = input
 
   // 拼用户 prompt：把三层上下文清晰隔开
   const planSerialized = plan.days
@@ -137,7 +140,10 @@ ${planSerialized}
 【用户问题】
 ${question}${historyBlock}`
 
-  const result = await chatJSON<AdviceResult>(SYSTEM_PROMPT, userPrompt)
+  // v2.5：人格前缀拼在 advice 严格规则 SYSTEM_PROMPT 之前
+  //   人格规定语气，SYSTEM_PROMPT 规定 JSON 结构与"基于原文"约束，互不冲突
+  const systemPrompt = composeSystemPrompt(personality, SYSTEM_PROMPT)
+  const result = await chatJSON<AdviceResult>(systemPrompt, userPrompt)
 
   // 防御：AI 偶尔会漏字段或字段类型错，做兜底
   if (!result.answer || typeof result.answer !== "string") {

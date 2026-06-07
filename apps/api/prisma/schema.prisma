@@ -122,12 +122,14 @@ model StudyPlan {
 
 // ---------- 5. 闪卡 ----------
 model Flashcard {
-  id       String @id @default(uuid())
-  planId   String
-  front    String @db.Text
-  back     String @db.Text
-  mastery  Int    @default(0)
-  dayIndex Int    @default(1)
+  id          String  @id @default(uuid())
+  planId      String
+  front       String  @db.Text
+  back        String  @db.Text
+  mastery     Int     @default(0)
+  dayIndex    Int     @default(1)
+  // v2.5：人格快照。生成时锁 vault.agentPersonality；前端按此切 4 种版式 + 反问语气
+  personality String?
 
   plan StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
@@ -137,13 +139,15 @@ model Flashcard {
 
 // ---------- 6. 题目 ----------
 model Question {
-  id          String @id @default(uuid())
+  id          String  @id @default(uuid())
   planId      String
-  content     String @db.Text
+  content     String  @db.Text
   options     Json
   correct     String
-  explanation String @db.Text
-  dayIndex    Int    @default(1)
+  explanation String  @db.Text
+  dayIndex    Int     @default(1)
+  // v2.5：人格快照。生成时锁 vault.agentPersonality；前端讲解语气按此切
+  personality String?
 
   plan           StudyPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
   answerRecords  AnswerRecord[]

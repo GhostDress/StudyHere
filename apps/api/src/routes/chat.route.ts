@@ -28,9 +28,10 @@ chat.post("/:vaultId", async (c) => {
   const vaultId = c.req.param("vaultId")
 
   // 校验 vault 归属
+  // v2.5：把 agentPersonality 拉出来注入 RAG，让 4 人格追问语气有差异
   const vault = await prisma.vault.findFirst({
     where: { id: vaultId, userId: user.userId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, agentPersonality: true },
   })
   if (!vault) {
     return c.json({ error: "资料不存在或无权访问" }, 404)
@@ -54,7 +55,11 @@ chat.post("/:vaultId", async (c) => {
 
   // 跑 RAG
   try {
-    const result = await ragAnswer(vaultId, question.trim())
+    const result = await ragAnswer(
+      vaultId,
+      question.trim(),
+      vault.agentPersonality,
+    )
     return c.json(result)
   } catch (err) {
     console.error(`[chat] vault ${vaultId} RAG 失败:`, err)

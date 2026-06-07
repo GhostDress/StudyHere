@@ -102,8 +102,13 @@ export async function processVault(vaultId: string): Promise<void> {
 
     // 5. 生成学习计划
     // v2.3 slice 2：传 pageMap 给 generatePlan，让 AI 输出 sourcePages
+    // v2.5 修复：把 vault.agentPersonality 沿调用链传下去，避免 4 人格
+    //   生成出来内容一模一样（之前 fileProcessor 完全没传 personality，
+    //   下游 composeSystemPrompt(null,...) 全部回退 student）
+    const personality = vault.agentPersonality
     const plan = await generatePlan(textContent, DEFAULT_PLAN_DAYS, {
       pageMap,
+      personality,
     })
 
     const studyPlan = await prisma.studyPlan.create({
@@ -115,7 +120,7 @@ export async function processVault(vaultId: string): Promise<void> {
         planData: plan as any,
       },
     })
-    console.log(`[Worker] 学习计划已创建: ${studyPlan.id}`)
+    console.log(`[Worker] 学习计划已创建: ${studyPlan.id}（人格 ${personality}）`)
 
     // 6. 立即标记完成 —— plan-confirm 页只读 planData.days，不依赖闪卡/题目。
     //    ⚠️ 关键修复：以前要等 28 次串行 DeepSeek 调用（10 闪卡 + 5 题 ×14 天）
@@ -128,7 +133,7 @@ export async function processVault(vaultId: string): Promise<void> {
     console.log(`[Worker] ✅ vault 处理完成（plan 就绪，闪卡/题目后台生成）: ${vaultId}`)
 
     // 7. 后台懒生成闪卡 + 题目（不 await，不阻塞主流程，单独 catch 不炸）
-    generateCardsInBackground(studyPlan.id, plan.days).catch((e) => {
+    generateCardsInBackground(studyPlan.id, plan.days, personality).catch((e) => {
       console.error(
         `[Worker] ⚠️ plan ${studyPlan.id} 闪卡/题目后台生成失败（不影响计划使用）:`,
         e instanceof Error ? e.message : e,
@@ -156,12 +161,17 @@ export async function processVault(vaultId: string): Promise<void> {
 async function generateCardsInBackground(
   planId: string,
   days: { day: number; topics: string[]; goals: string[] }[],
+  personality: string,
 ): Promise<void> {
   for (const day of days) {
     const dayContent = `${day.topics.join("、")}：${day.goals.join("；")}`
 
     try {
-      const flashcards = await generateFlashcards(dayContent, FLASHCARDS_PER_DAY)
+      const flashcards = await generateFlashcards(
+        dayContent,
+        FLASHCARDS_PER_DAY,
+        personality,
+      )
       if (flashcards.length > 0) {
         await prisma.flashcard.createMany({
           data: flashcards.map((f) => ({
@@ -169,6 +179,7 @@ async function generateCardsInBackground(
             front: f.front,
             back: f.back,
             dayIndex: day.day,
+            personality, // v2.5：把生成时刻的人格快照在卡片上，前端按此切版式
           })),
         })
       }
@@ -180,7 +191,11 @@ async function generateCardsInBackground(
     }
 
     try {
-      const questions = await generateQuestions(dayContent, QUESTIONS_PER_DAY)
+      const questions = await generateQuestions(
+        dayContent,
+        QUESTIONS_PER_DAY,
+        personality,
+      )
       if (questions.length > 0) {
         await prisma.question.createMany({
           data: questions.map((q) => ({
@@ -190,6 +205,7 @@ async function generateCardsInBackground(
             correct: q.correct,
             explanation: q.explanation,
             dayIndex: day.day,
+            personality, // v2.5：题目讲解语气前端按此切
           })),
         })
       }

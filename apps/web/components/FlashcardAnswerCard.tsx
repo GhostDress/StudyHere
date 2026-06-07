@@ -48,7 +48,10 @@ export default function FlashcardAnswerCard({
   personality,
   flashcardId,
 }: Props) {
-  const { personality: cardPersonality, answer, theory, credibility } = card
+  const { answer, theory, credibility } = card
+  // v2.5 兜底：老数据 card.personality 可能为空（v2.4 之前的 plan 生成时没存人格）。
+  // 优先用卡片快照（保留"生成时的人格"语义），缺失则回退到当前 vault active personality。
+  const cardPersonality = card.personality ?? personality ?? "student"
   // v2.2.1：可信度区默认折叠
   const [showCredibility, setShowCredibility] = useState(false)
   // 手风琴模式：严苛教练反问只能同时展开一个
