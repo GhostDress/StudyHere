@@ -430,40 +430,76 @@ export async function generateFlashcards(
   count: number,
   personality?: string | null,
 ): Promise<FlashcardResult[]> {
-  // personality 入参留作"人格前缀语气"参考，但 cardData 里 4 人格字段都要生成
-  const taskPrompt = `你是一名教育专家，擅长制作 4 人格差异化的学习闪卡。
-根据给定的学习内容，生成 ${count} 张高质量的记忆闪卡。
+  // 第一轮：尝试 multi-personality 完整版（含 strict.socraticDialogues 9 句对话）
+  try {
+    const result = await tryGenerateMultiCards(dayContent, count, personality, false)
+    if (result.length > 0) return result
+  } catch (e) {
+    console.warn(
+      `[plan.service] multi-cards 第一轮失败（可能 token 超），降级再试：`,
+      e instanceof Error ? e.message : e,
+    )
+  }
 
-【绝对规则】
-1. 每张卡 cardData 必须同时包含 4 人格（student / cert / explorer / strict）
-   各自的差异化字段——这是为了用户切人格按钮能立刻看到不同版式
-2. baseQa.keyword 是本卡核心关键词，所有人格的 question 都要包它
-3. baseQa.definition 是所有人格共享的精准定义
-4. 不要为了凑字数填废话；4 人格字段都要真有差异，不能 4 套填一样
-5. front 是兜底问题（用 baseQa.keyword 提问），back 是兜底答案文本（用 definition）
-
-${MULTI_PERSONALITY_CARD_SCHEMA}
-
-输出严格为 JSON：
-{
-  "flashcards": [
-    {
-      "front": "问题面（兜底用，简洁，一句话）",
-      "back": "答案兜底文本（用 definition，2-3 句，不带 markdown）",
-      "cardData": { 上面 schema 描述的对象，4 人格字段都填 }
-    }
-  ]
+  // 第二轮：降级——strict 只留 socraticQuestions 3 句，不要 socraticDialogues
+  // 大幅减少输出 token，保证 4 张/天能塞进 8000 输出上限
+  return tryGenerateMultiCards(dayContent, count, personality, true)
 }
 
-要求：
-- 涵盖今日学习主题的关键概念、定义、公式、方法
-- 4 人格字段必须真有差异：学生党要真举例子，考证型要真有口诀，兴趣探索要真跨学科，严苛教练要真反问
-- 只输出 JSON，不要任何额外文字、不要 markdown 包裹`
+async function tryGenerateMultiCards(
+  dayContent: string,
+  count: number,
+  personality: string | null | undefined,
+  lightStrict: boolean,
+): Promise<FlashcardResult[]> {
+  const strictBlock = lightStrict
+    ? `    "strict": {
+      "question": "用你自己的话，30 秒内解释「<keyword>」。",
+      "socraticQuestions": ["反问 1（反例角度）", "反问 2（边界条件）", "反问 3（易混概念）"]
+    }`
+    : `    "strict": {
+      "question": "用你自己的话，30 秒内解释「<keyword>」。先在心里答完，再翻面对照。",
+      "socraticQuestions": ["反问 1（反例）", "反问 2（边界）", "反问 3（易混）"],
+      "socraticDialogues": [
+        { "bubbles": ["教练话 1", "提示话 2", "策略话 3"] },
+        { "bubbles": ["...", "...", "..."] },
+        { "bubbles": ["...", "...", "..."] }
+      ]
+    }`
+
+  const schema = `cardData 结构（一张卡同时含 4 人格字段）：
+{
+  "baseQa": { "keyword": "核心关键词 3-8 字", "definition": "精准定义 1-2 句" },
+  "theoryByPersonality": {
+    "student": { "name": "认知负荷", "shortDesc": "渐进披露", "citation": "Sweller, 1988" },
+    "cert":    { "name": "检索练习", "shortDesc": "主动提取", "citation": "Roediger, 2006" },
+    "explorer":{ "name": "远距离迁移", "shortDesc": "跨域类比", "citation": "Gick, 1980" },
+    "strict":  { "name": "苏格拉底式", "shortDesc": "反问引导", "citation": "Slamecka, 1978" }
+  },
+  "byPersonality": {
+    "student": { "question": "想象你跟同学解释「<keyword>」？", "example": "真实场景举例 2 句", "hint": "易混点提示" },
+    "cert": { "question": "【高/中/低频考点】「<keyword>」？", "examFrequency": "high", "examTrap": "命题陷阱 2 句", "mnemonic": "记忆口诀" },
+    "explorer": { "question": "「<keyword>」可类比哪个领域？", "crossDomain": "跨学科类比 2 句", "counterfactual": "反事实追问" },
+${strictBlock}
+  }
+}`
+
+  const taskPrompt = `你是教育专家，生成 ${count} 张闪卡。每张卡的 cardData 必须同时含 4 人格字段。
+
+【规则】
+1. 4 人格字段必须真有差异，不能 4 套填一样
+2. baseQa.keyword 所有人格 question 要包含
+3. front=兜底问题，back=兜底答案文本（用 definition）
+
+${schema}
+
+输出 JSON：
+{ "flashcards": [ { "front": "...", "back": "...", "cardData": { ... } } ] }
+
+只输出 JSON，不要 markdown 包裹。`
 
   const userPrompt = `今日学习内容：${dayContent}`
 
-  // personality 仍传给 composeSystemPrompt，让人格前缀影响整体生成语气
-  // 但 cardData 4 人格字段都要填，不依赖这个 personality
   const systemPrompt = composeSystemPrompt(personality, taskPrompt)
   const result = await callAIJSON<{ flashcards: FlashcardResult[] }>(systemPrompt, userPrompt)
 
@@ -471,8 +507,7 @@ ${MULTI_PERSONALITY_CARD_SCHEMA}
     throw new Error("AI 返回的闪卡结构不完整")
   }
 
-  // 字段净化 + 防 AI 偷懒不输出 cardData
-  // 关键校验：byPersonality 4 人格字段必须都在
+  // 字段净化 + byPersonality 4 人格字段必须都在
   const cleaned = result.flashcards
     .slice(0, count)
     .map<FlashcardResult>((f) => {

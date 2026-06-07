@@ -12,7 +12,11 @@ import { buildChunksFromText, embedChunksForVault } from "../services/chunk.serv
 // v2.4：传给 generatePlan 的天数现在是"上限"，AI 在 5-N 间根据原文复杂度自决。
 // 上限设 21 而非 14，给系统教材一些空间；简单资料 AI 自己会缩到 5-10 天。
 const DEFAULT_PLAN_DAYS = 21
-const FLASHCARDS_PER_DAY = 10
+// v2.5++：multi-personality cardData 每张卡 ~700-1000 token，10 张 ×4 人格字段
+// 会突破 DeepSeek max_tokens=8000 输出上限导致 JSON 截断 → 0 张入库。
+// 降到 4 张/天，~3500 token + 框架 ≈ 4500 token，远低于 8000 上限。
+// 用户实际场景下"每天 4 张高质量卡"也比"每天 10 张但人格无差异"更有价值。
+const FLASHCARDS_PER_DAY = 4
 const QUESTIONS_PER_DAY = 5
 
 /**
