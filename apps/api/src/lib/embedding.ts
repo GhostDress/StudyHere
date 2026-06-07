@@ -40,9 +40,12 @@ if (!API_KEY) {
 
 // v2.5：单条 ≤ 500 字符（embedding-2 单条 512 token 上限，留缓冲）
 const MAX_CHARS_PER_INPUT = 500
-// v2.5：单次请求合计 ≤ 6000 字符（embedding-2 整批 8K token 上限，留 25% 缓冲）
-const MAX_CHARS_PER_BATCH = 6000
-// 保留 BATCH_SIZE 作为「条数硬上限」防极端短 chunk 撑爆请求体
+// v2.5：单次请求合计 ≤ 4500 字符（embedding-2 整批 8K token 上限）
+//   D 生产复现测 3：64 条 × 650 字 = ~24 万字节 payload 必 1210，所以
+//   不能光看 token 还要看 payload。4500 字符 ≈ 6750 token，离 8K
+//   有 1250 缓冲，且 payload 远低于 1210 触发阈值。
+const MAX_CHARS_PER_BATCH = 4500
+// 保留作为「条数硬上限」防极端短 chunk 撑爆请求体
 const MAX_ITEMS_PER_BATCH = 64
 const MAX_RETRIES = 3
 const RATE_LIMIT_PER_SEC = 5
