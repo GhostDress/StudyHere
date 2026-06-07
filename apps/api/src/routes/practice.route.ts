@@ -27,9 +27,16 @@ practice.get("/flashcard", async (c) => {
     return c.json({ error: "学习计划不存在或无权访问" }, 404)
   }
 
-  const flashcards = await prisma.flashcard.findMany({
+  const rows = await prisma.flashcard.findMany({
     where: { planId },
     orderBy: [{ dayIndex: "asc" }, { id: "asc" }],
+  })
+  // v2.5+：把 DB 字段 cardData 映射成前端 Flashcard.card（前端期望的 prop 名）
+  //   cardData：避免跟 Prisma 关联命名冲突所以 DB 上叫 cardData
+  //   card：前端 mockContentEngine.FlashcardCard 历史命名，FlashcardAnswerCard 也读这个
+  const flashcards = rows.map((r) => {
+    const { cardData, ...rest } = r
+    return { ...rest, card: cardData ?? undefined }
   })
   return c.json({ flashcards })
 })

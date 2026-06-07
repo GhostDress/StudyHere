@@ -1,6 +1,7 @@
 import { writeFile, mkdir, unlink } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { Prisma } from "@prisma/client"
 import { prisma } from "../lib/prisma"
 import { supabaseAdmin, STORAGE_BUCKET } from "../lib/supabase"
 
@@ -180,6 +181,9 @@ async function generateCardsInBackground(
             back: f.back,
             dayIndex: day.day,
             personality, // v2.5：把生成时刻的人格快照在卡片上，前端按此切版式
+            // v2.5+：结构化 cardData JSON（学生党/考证型/兴趣探索/严苛教练 4 套不同字段）
+            // null 时前端 fallback 到 back 字段
+            cardData: f.cardData ? (f.cardData as unknown as Prisma.InputJsonValue) : undefined,
           })),
         })
       }

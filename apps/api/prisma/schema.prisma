@@ -130,6 +130,14 @@ model Flashcard {
   dayIndex    Int     @default(1)
   // v2.5：人格快照。生成时锁 vault.agentPersonality；前端按此切 4 种版式 + 反问语气
   personality String?
+  // v2.5+：4 人格结构化卡片数据（FlashcardCard JSON）
+  //   学生党 → { example, hint }
+  //   考证型 → { examFrequency, examTrap, mnemonic }
+  //   兴趣探索 → { crossDomain, counterfactual }
+  //   严苛教练 → { socraticQuestions, socraticDialogues }
+  //   前端 FlashcardAnswerCard 按 personality 渲染对应字段
+  //   老数据为 null 时前端回退展示 back 字段（兼容）
+  cardData    Json?
 
   plan StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
