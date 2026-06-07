@@ -66,9 +66,36 @@ const PdfViewer = dynamic(() => import("./PdfViewer"), {
 
 // ============ Provider ============
 
+// 拖拽宽度配置（vw 百分比，跟 PlanAdvisor 风格一致）
+const PDF_WIDTH_KEY = "pdf_drawer_width_px"
+const PDF_DEFAULT_WIDTH = 720
+const PDF_MIN_WIDTH = 480
+const PDF_MAX_WIDTH = 1200
+
 export function PdfDrawerProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
   const [opts, setOpts] = useState<PdfDrawerOpenOptions | null>(null)
+  const [width, setWidth] = useState<number>(PDF_DEFAULT_WIDTH)
+  const [resizing, setResizing] = useState(false)
+
+  // 恢复用户上次调过的宽度
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const stored = parseInt(localStorage.getItem(PDF_WIDTH_KEY) || "", 10)
+    if (
+      Number.isFinite(stored) &&
+      stored >= PDF_MIN_WIDTH &&
+      stored <= PDF_MAX_WIDTH
+    ) {
+      setWidth(stored)
+    }
+  }, [])
+
+  // 持久化宽度
+  useEffect(() => {
+    if (typeof window === "undefined" || resizing) return
+    localStorage.setItem(PDF_WIDTH_KEY, String(width))
+  }, [width, resizing])
 
   const open = useCallback((newOpts: PdfDrawerOpenOptions) => {
     setOpts(newOpts)
@@ -91,25 +118,58 @@ export function PdfDrawerProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey)
   }, [isOpen, close])
 
+  // 左边缘拖拽改宽
+  const onResizeStart = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault()
+      setResizing(true)
+      const startX = e.clientX
+      const startWidth = width
+      const onMove = (ev: PointerEvent) => {
+        // 抽屉在右侧：向左拖 = 加宽，向右拖 = 变窄
+        const next = Math.max(
+          PDF_MIN_WIDTH,
+          Math.min(PDF_MAX_WIDTH, startWidth + (startX - ev.clientX)),
+        )
+        setWidth(next)
+      }
+      const onEnd = () => {
+        setResizing(false)
+        window.removeEventListener("pointermove", onMove)
+        window.removeEventListener("pointerup", onEnd)
+      }
+      window.addEventListener("pointermove", onMove)
+      window.addEventListener("pointerup", onEnd)
+    },
+    [width],
+  )
+
   return (
     <PdfDrawerContext.Provider value={{ open, close, isOpen }}>
       {children}
-      {/* 遮罩 */}
-      <div
-        className={`fixed inset-0 z-40 bg-black/30 transition-opacity duration-300 ${
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={close}
-        aria-hidden
-      />
+      {/* 无遮罩：背后 Day 卡片仍可见可滚（v2.3 信任链路对照阅读原则）*/}
       {/* 抽屉 */}
       <aside
-        className={`fixed top-0 right-0 z-50 h-screen w-full md:w-[60vw] bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col ${
+        className={`fixed top-0 right-0 z-50 h-screen bg-white shadow-[-8px_0_32px_rgba(0,0,0,0.12)] border-l border-[#e9e9e8] transition-transform duration-300 ease-out flex ${
           isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
+        } ${resizing ? "select-none" : ""}`}
+        style={{
+          width: `${width}px`,
+          maxWidth: "100vw", // 移动端不能超过视口
+        }}
         aria-hidden={!isOpen}
       >
-        {opts && <PdfDrawerBody opts={opts} onClose={close} />}
+        {/* 左边缘拖拽手柄 */}
+        <div
+          onPointerDown={onResizeStart}
+          className={`group absolute left-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-[#6940a5]/20 z-10 ${
+            resizing ? "bg-[#6940a5]/30" : ""
+          }`}
+          title="拖拽调整宽度"
+        />
+        <div className="flex flex-col w-full pl-1.5">
+          {opts && <PdfDrawerBody opts={opts} onClose={close} />}
+        </div>
       </aside>
     </PdfDrawerContext.Provider>
   )

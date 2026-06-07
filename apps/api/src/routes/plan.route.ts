@@ -375,9 +375,19 @@ plan.post("/:id/advice", async (c) => {
     : []
 
   // 查 plan + 校验归属
-  const record = await prisma.studyPlan.findFirst({
+  // 注：跟 GET /api/plan/:id 一致，:id 既可能是 planId 也可能是 vaultId
+  // （前端有些路径会拼 /plan-confirm/[vaultId]）。先按 planId 查，
+  // 查不到时按 vaultId 反查。advice/regenerate 之前漏了这条 fallback
+  // 导致前端拼 vaultId 调 advice 时直接 404。
+  let record = await prisma.studyPlan.findFirst({
     where: { id, userId: user.userId },
   })
+  if (!record) {
+    record = await prisma.studyPlan.findFirst({
+      where: { vaultId: id, userId: user.userId },
+      orderBy: { createdAt: "desc" },
+    })
+  }
   if (!record) return c.json({ error: "学习计划不存在" }, 404)
 
   // 查 vault 拿 textContent
