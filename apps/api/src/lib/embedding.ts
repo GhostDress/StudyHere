@@ -4,14 +4,26 @@
 // 用途：把 chunk 文本算成 1024 维向量，存到 chunks.embedding 列（pgvector）
 //
 // 模型：智谱 embedding-2（开放平台，中文友好，1024 维，价格 ~¥0.5/M tokens）
-// 接口文档：https://open.bigmodel.cn/dev/api#text_embedding
+// 接口文档：https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-2
 //
 // 设计：
-//   - 批量优先：智谱单次最多 64 条 input，能批量绝不单条
+//   - 批量优先：embedding-2 支持数组 input，能批量绝不单条
 //   - 内置重试：429/5xx 指数回退最多 3 次
 //   - 限流：默认 5 req/s（智谱免费档约 5 QPS，留缓冲）
 //   - 不缓存：chunk 文本变了向量必须重算，缓存价值低
 //   - 错误抛出：调用方决定是 fail-fast 还是降级用 BGE
+//
+// v2.5 修复 · 智谱 1210「参数有误」根因 + 修法：
+//   智谱 embedding-2 硬限制：单条 ≤ 512 token，整批合计 ≤ 8K token。
+//   旧实现固定按"条数 64"分批 × 单条 ~500 字符 ≈ 16K+ token，超 8K 上限
+//   2 倍多 → 凡是 chunk 数 ≥ ~16 的文档（稍大点的 PDF）整批必爆 1210。
+//
+//   改成按"字符预算"分批：
+//     1) 单条入参先截断到 MAX_CHARS_PER_INPUT 防 overlap 把单条顶过 512 token
+//     2) 累计字符数到 MAX_CHARS_PER_BATCH 就切批，留足缓冲到 8K token 以下
+//     3) 字符 ↔ token 换算：中文最坏 1 字符 ≈ 1 token，留 25% 余量 → 6000 字符
+//
+//   chunk.service 那一侧外层 BATCH=64 是 prisma transaction 大小，不动。
 // ============================================================
 
 const BASE_URL =
@@ -26,7 +38,12 @@ if (!API_KEY) {
   )
 }
 
-const BATCH_SIZE = 64
+// v2.5：单条 ≤ 500 字符（embedding-2 单条 512 token 上限，留缓冲）
+const MAX_CHARS_PER_INPUT = 500
+// v2.5：单次请求合计 ≤ 6000 字符（embedding-2 整批 8K token 上限，留 25% 缓冲）
+const MAX_CHARS_PER_BATCH = 6000
+// 保留 BATCH_SIZE 作为「条数硬上限」防极端短 chunk 撑爆请求体
+const MAX_ITEMS_PER_BATCH = 64
 const MAX_RETRIES = 3
 const RATE_LIMIT_PER_SEC = 5
 
@@ -87,16 +104,36 @@ export async function embedBatch(texts: string[]): Promise<number[][]> {
   }
   if (texts.length === 0) return []
 
+  // v2.5：先对每条做截断（防单条爆 512 token），同时跳过空串
+  //   截断不会改变 chunk 文本本身，只影响向量计算时喂给智谱的字数
+  const trimmedTexts = texts.map((t) =>
+    t.length > MAX_CHARS_PER_INPUT ? t.slice(0, MAX_CHARS_PER_INPUT) : t,
+  )
+
   const result: number[][] = new Array(texts.length)
 
-  // 分批
-  for (let batchStart = 0; batchStart < texts.length; batchStart += BATCH_SIZE) {
-    const batch = texts.slice(batchStart, batchStart + BATCH_SIZE)
+  // v2.5：按"字符预算"切批，不再固定 64 条
+  let batchStart = 0
+  while (batchStart < trimmedTexts.length) {
+    // 找出本批末尾：要么累计字符达 MAX_CHARS_PER_BATCH，要么条数达 MAX_ITEMS_PER_BATCH
+    let batchEnd = batchStart
+    let chars = 0
+    while (batchEnd < trimmedTexts.length) {
+      const next = trimmedTexts[batchEnd].length
+      // 至少塞 1 条（防超长单条 + 字符预算的死循环）
+      if (batchEnd > batchStart && chars + next > MAX_CHARS_PER_BATCH) break
+      if (batchEnd - batchStart >= MAX_ITEMS_PER_BATCH) break
+      chars += next
+      batchEnd++
+    }
+
+    const batch = trimmedTexts.slice(batchStart, batchEnd)
     await acquireSlot()
     const vecs = await callWithRetry(batch)
     for (let i = 0; i < vecs.length; i++) {
       result[batchStart + i] = vecs[i]
     }
+    batchStart = batchEnd
   }
 
   return result
